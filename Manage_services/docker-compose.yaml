@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  nginx:
+    container_name: nginx
+    build:
+      context: ./nginx_service
+      dockerfile: Dockerfile
+    ports:
+      - "443:443"
+      - "80:80"
+    networks:
+      - transcendence
+    restart: always
+
+  postgres:
+    image: postgres:16.3
+    container_name: postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgres/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdatabase:/var/lib/postgresql/data/pgdata:rw
+    networks:
+      - transcendence
+    restart: always
+
+  memcached:
+    container_name: memcached
+    image: memcached:latest
+    ports:
+    - "11211:11211"
+    networks:
+    - transcendence
+    restart: always
+
+  redis:
+    container_name: redis
+    image: redis:latest
+    ports:
+    - "6379:6379"
+    volumes:
+      - redisv:/data
+    restart: always
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    container_name: elasticsearch
+    environment:
+      - "discovery.type=single-node"
+      - "xpack.security.enabled=false"  # Disable security to avoid SSL issues
+      - "xpack.security.http.ssl.enabled=false"
+      - "xpack.security.transport.ssl.enabled=false"
+      - "xpack.security.authc.api_key.enabled=false"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.3
+    container_name: kibana
+    environment:
+      - "ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
+      - "xpack.security.enabled=false"  # Disable security to avoid SSL issues
+      - "xpack.security.encryptionKey=change_me"  # Needed when xpack security is disabled
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+volumes:
+  pgdatabase:
+    driver: local
+  redisv:
+    driver: local
+  es_data:
+    driver: local
+  # test_data:
+  # ls_data:
+  #   driver: local
+  # kb_data:
+  #   driver: local
+
+networks:
+  transcendence:
+    driver: bridge
