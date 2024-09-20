@@ -57,7 +57,7 @@ class SettingUpdateView(generics.GenericAPIView):
         try:
             profile = Profile.objects.get(id=profile_id)
         except Profile.DoesNotExist:
-            return Response(
+            return JsonResponse(
                 {'error': 'Profile not found.'},
                 status=status.HTTP_404_NOT_FOUND
             )
@@ -72,11 +72,11 @@ class SettingUpdateView(generics.GenericAPIView):
             profile.save()
             message = "Setting created successfully." if created else "Setting updated successfully."
 
-            return Response(
+            return JsonResponse(
                 {'message': message, 'setting': serializer.data},
                 status=status.HTTP_200_OK
             )
-        return Response(
+        return JsonResponse(
             {'errors': serializer.errors},
             status=status.HTTP_400_BAD_REQUEST
         )
@@ -88,7 +88,7 @@ class ProfileSettingsView(generics.GenericAPIView):
         try:
             profile = Profile.objects.get(id=profile_id)
         except Profile.DoesNotExist:
-            return Response(
+            return JsonResponse(
                 {'error': 'Profile not found.'},
                 status=status.HTTP_404_NOT_FOUND
             )
@@ -96,9 +96,9 @@ class ProfileSettingsView(generics.GenericAPIView):
         settings = Setting.objects.filter(profile=profile)
         if settings.exists():
             serializer = self.serializer_class(settings, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(
+            return JsonResponse(
                 {'message': 'No settings found for this profile.'},
                 status=status.HTTP_404_NOT_FOUND
             )

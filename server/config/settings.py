@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'chat.apps.ChatConfig',
     'game.apps.GameConfig',
     'prfl.apps.PrflConfig',
+    'tournament.apps.TournamentConfig',
     'django_otp',
     'django_otp.plugins.otp_totp',
     'two_factor',
