@@ -33,6 +33,16 @@ async def matchmaking(consumer):
             f'user_{consumer.user.id}',
             {'type': 'waiting', 'data': data})
 
+async def invited_player(consumer, data):
+    if data["status"] == 'invited':
+        player2 = consumer.user.profile
+        player1 = await get_player_profile(consumer, data["inviter_id"])
+
+        match = Match.objects.create(player1=player1, player2=player2, status='ongoing')
+        await notify_players(consumer, player1, player2, match)
+    else:
+        pass
+
 async def notify_players(consumer, player1, player2, match):
     player1_data = await get_profile_data(consumer, player1)
     player2_data = await get_profile_data(consumer, player2)
@@ -61,3 +71,11 @@ def get_player_ids(consumer, match_id):
         return match.player1.user.id, match.player2.user.id
     except Match.DoesNotExist:
         return None, None
+
+@database_sync_to_async
+def get_player_profile(consumer, invited_id):
+    try:
+        profile = Profile.objects.get(id=invited_id)
+        return profile
+    except Profile.DoesNotExist:
+        return None

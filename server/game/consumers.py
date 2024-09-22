@@ -38,7 +38,6 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         self.group_name = f"user_{self.user.id}"
         await self.channel_layer.group_add(self.group_name, self.channel_name)
-        await self.add_player_to_queue()
         await initialize_data(self)
 
     async def disconnect(self, close_code):
@@ -60,7 +59,10 @@ class GameConsumer(AsyncWebsocketConsumer):
         action = data.get('action')
 
         if action == 'join_queue':
+            await self.add_player_to_queue()
             await matchmaking(self)
+        if action == 'invitation':
+            await invited_player(self, data)
         elif action == 'disconnect':
             self.isGaming = False
             await self.close()

@@ -1,14 +1,15 @@
 from django.http                import JsonResponse
 from rest_framework             import status
-from .models                    import Match, MatchHistory, PlayerQueue
+from .models                    import Match, MatchHistory, PlayerQueue, Setting
 from django.utils               import timezone
 from prfl.models                import Profile
 from prfl.serializers           import ProfileSerializer
 from authentication.utils       import Authenticate
 from rest_framework             import generics, status
-from .serializers               import MatchSerializer, SettingSerializer
+from .serializers               import MatchSerializer, SettingSerializer, MatchHistorySerializer
 from channels.layers            import get_channel_layer
 from asgiref.sync               import async_to_sync, sync_to_async 
+from authentication.utils       import print_red, print_green, print_yellow
 import time
 
 class MatchStatusView(generics.GenericAPIView):
@@ -24,30 +25,28 @@ class MatchStatusView(generics.GenericAPIView):
                 'error': 'Match not found'
                 }, status=status.HTTP_404_NOT_FOUND)
 
-class EndMatchView(generics.GenericAPIView):
-    def post(self, request, match_id):
-        try:
-            match = Match.objects.get(id=match_id)
-            winner = request.data.get('winner')
-            loser = request.data.get('loser')
-            winner_score = request.data.get('winner_score')
-            loser_score = request.data.get('loser_score')
 
-            MatchHistory.objects.create(
-                match=match,
-                winner=winner,
-                loser=loser,
-                winner_score=winner_score,
-                loser_score=loser_score,
-                ended_at=timezone.now()
+class PlayerMatchHistoryView(generics.ListAPIView):
+    serializer_class = MatchHistorySerializer
+
+    def get(self, request, username):
+        print_yellow(f"fitshing mach history from username: {username}")
+        try:
+            player_profile = Profile.objects.get(username=username)
+        except Profile.DoesNotExist:
+            return JsonResponse(
+                {'error': 'Profile not found.'},
+                status=status.HTTP_404_NOT_FOUND
             )
 
-            match.status = 'finished'
-            match.save()
-
-            return JsonResponse({'message': 'Match ended and saved.'}, status=status.HTTP_200_OK)
-        except Match.DoesNotExist:
-            return JsonResponse({'error': 'Match not found'}, status=status.HTTP_404_NOT_FOUND)
+        return MatchHistory.objects.filter(
+            models.Q(winner=player_profile) | models.Q(loser=player_profile)
+        )
+    
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        print_green(f'data: {response.data}')
+        return response
 
 class SettingUpdateView(generics.GenericAPIView):
     serializer_class = SettingSerializer
@@ -96,10 +95,10 @@ class ProfileSettingsView(generics.GenericAPIView):
         settings = Setting.objects.filter(profile=profile)
         if settings.exists():
             serializer = self.serializer_class(settings, many=True)
-            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+            print_yellow(f'data: {serializer.data}')
+            return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
         else:
             return JsonResponse(
                 {'message': 'No settings found for this profile.'},
                 status=status.HTTP_404_NOT_FOUND
             )
-            

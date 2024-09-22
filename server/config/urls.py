@@ -23,5 +23,5 @@ urlpatterns = [
     path('api/profile/', include('prfl.urls')),
     path('api/chat/', include('chat.urls')),
     path('api/game/', include('game.urls')),
-    path('api/tournament/', include('tournament.urls')),
+    # path('api/tournament/', include('tournament.urls')),
 ]
