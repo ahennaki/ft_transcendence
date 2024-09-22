@@ -1,15 +1,13 @@
-from django.http import JsonResponse
+from django.http    import JsonResponse
 from rest_framework import status
-from django.conf import settings
-from .encodeJWT import createJWTToken
-from django.contrib.auth import get_user_model
-from .print_color import print_red, print_green, print_yellow
-
-User = get_user_model()
+from django.conf    import settings
+from .encodeJWT     import createJWTToken
+from ..models       import CustomUser
+from .print_color   import print_red, print_green, print_yellow
 
 def JWTsGenerator(id, dic):
     print_green('GENERATING TOKENS')
-    user = User.objects.get(id=id)
+    user = CustomUser.objects.get(id=id)
     access_token = createJWTToken(
             user, 
             settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']

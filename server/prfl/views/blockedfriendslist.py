@@ -21,4 +21,18 @@ class BlockedFriendsView(generics.GenericAPIView):
             'blocked_friend__rank'
         )
 
-        return JsonResponse({"blockedfriends": list(blockedfriends_data)}, status=status.HTTP_200_OK)
+        formatted_data = [
+            {
+                'username': item['blocked_friend__username'],
+                'is_online': item['blocked_friend__is_online'],
+                'picture': item['blocked_friend__picture'],
+                'rank': item['blocked_friend__rank']
+            }
+            for item in blockedfriends_data
+        ]
+
+        return JsonResponse(
+            formatted_data,
+            safe=False, 
+            status=status.HTTP_200_OK,
+        )

@@ -1,7 +1,7 @@
 
 from django.urls    import path
-from .consumers     import FriendshipRequestConsumer
+from .consumers     import NotificationConsumer
 
 websocket_urlpatterns = [
-    path('ws/friendship-request/', FriendshipRequestConsumer.as_asgi()),
+    path('ws/notifications/', NotificationConsumer.as_asgi()),
 ]

@@ -13,7 +13,7 @@ class EditAddressView(generics.GenericAPIView):
         country = request.data.get('country')
         city = request.data.get('city')
         address = request.data.get('address')
-        zip_code = request.data.get('zip_code')
+        zip_code = request.data.get('Code')
         profile = user.profile
         if country:
             profile.country = country

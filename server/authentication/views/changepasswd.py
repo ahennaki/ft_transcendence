@@ -1,7 +1,7 @@
 from rest_framework import generics, status
 from django.http    import JsonResponse
 from datetime       import datetime, timezone
-from ..utils        import Authenticate   
+from ..utils        import Authenticate, JWTsGenerator
 
 class ChangePasswd(generics.GenericAPIView):
     def post(self, request):
@@ -13,9 +13,9 @@ class ChangePasswd(generics.GenericAPIView):
         if not user.is_authenticated:
             return JsonResponse(
                 {"message": "User is not authenticated"},
-                status = status.HTTP_400_BAD_REQUEST
+                status = status.HTTP_401_UNAUTHORIZED
             )
-        if not (old_password and new_password):
+        if not old_password and not new_password:
             return JsonResponse(
                 {"message": "Old password and new password are required"},
                 status = status.HTTP_400_BAD_REQUEST
@@ -25,10 +25,9 @@ class ChangePasswd(generics.GenericAPIView):
             user.set_password(new_password)
             user.token_last_change = datetime.now(timezone.utc) 
             user.save()
-            # generate jwt tokens
-            return JsonResponse(
-                {"message": "Password changed successfully. Please log in again because we logged you out from all your sessions"},
-                status = status.HTTP_200_OK
+            return JWTsGenerator(
+                user.id,
+                {"message": "Your password has been changed successfully. You have been logged out of all active sessions."}
             )
         return JsonResponse(
             {"message": "Incorrect old password"},

@@ -2,7 +2,7 @@ from rest_framework             import generics, status
 from django.http                import JsonResponse
 from authentication.utils       import Authenticate
 from ..serializers              import StatisticsSerializer
-
+from ..models                   import Friend, Profile
 class StatisticsView(generics.GenericAPIView):
     serializer_class = StatisticsSerializer
     
@@ -18,3 +18,8 @@ class StatisticsView(generics.GenericAPIView):
             serializer.data,
             status = status.HTTP_200_OK
         )
+        
+        # return JsonResponse(
+        #     {"wins": 60, "loses": 30},
+        #     status = status.HTTP_200_OK
+        # )

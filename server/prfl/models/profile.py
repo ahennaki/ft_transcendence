@@ -1,7 +1,17 @@
 from django.db                  import models
 from authentication.models      import CustomUser
+from django.core.exceptions     import ValidationError
 from django.utils.translation   import gettext_lazy as _
+# from storages.backends.s3boto3  import S3Boto3Storage
 
+def validate_image(file):
+    file_size = file.size
+    limit_kb = 1024 * 5  # 5 MB limit
+    if file_size > limit_kb * 1024:
+        raise ValidationError("Max file size is %s KB" % limit_kb)
+    if not file.content_type.startswith('image/'):
+        raise ValidationError("Only image files are allowed")
+    
 class Profile(models.Model):
     BADGE_CHOICES = [
         ('BRONZE', 'Bronze'),
@@ -19,19 +29,20 @@ class Profile(models.Model):
     first_name = models.CharField(_("first_name"), max_length=150, blank=True, null=True)
     last_name = models.CharField(_("last_name"), max_length=150, blank=True, null=True)
     is_online = models.BooleanField(_("is_online"), default=False)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
     country = models.CharField(max_length=100, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
     zip_code = models.CharField(max_length=20, blank=True, null=True)
-    picture = models.CharField(_("profile picture"), max_length=150, blank=True)
-    background_picture = models.CharField(_("background picture"), max_length=150, blank=True)
+    picture = models.CharField(_("pic"), max_length=150, blank=True, null=True)
+    background_picture = models.CharField(_("back pic"), max_length=150, blank=True, null=True)
+    # picture = models.ImageField(upload_to='profile_pictures/', storage=S3Boto3Storage(), validators=[validate_image], blank=True, null=True)
+    # background_picture = models.ImageField(upload_to='background_pictures/', storage=S3Boto3Storage(), validators=[validate_image], blank=True, null=True)
     rank = models.IntegerField(_("Rank"), default=0)
     total = models.IntegerField(_("total"), default=0)
     wins = models.IntegerField(_("wins"), default=0)
     loses = models.IntegerField(_("loses"), default=0)
     isSettings = models.BooleanField(_("isSettings"), default=False)
-    # matchStatus = models.CharField(max_length=150, default='wait')
+    isInviting = models.BooleanField(_("isInviting"), default=False)
     created_at = models.DateTimeField(_("created_at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("updated_at"), auto_now=True)
 

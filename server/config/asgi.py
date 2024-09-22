@@ -30,9 +30,9 @@ application = ProtocolTypeRouter(
             AuthMiddlewareStack(
                 TokenAuthenticationMiddleware(
                     URLRouter( 
-                        prfl.routing.websocket_urlpatterns +
-                        chat.routing.websocket_urlpatterns +
-                        game.routing.websocket_urlpatterns
+                        prfl.routing.websocket_urlpatterns
+                        + chat.routing.websocket_urlpatterns
+                        + game.routing.websocket_urlpatterns
                     )
                 )
             )

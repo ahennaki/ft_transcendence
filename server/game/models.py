@@ -13,7 +13,7 @@ class Match(models.Model):
         return f'{self.player1} vs {self.player2}'
 
 class MatchHistory(models.Model):
-    match = models.OneToOneField(Match, on_delete=models.CASCADE, related_name='history')
+    match = models.OneToOneField(Match, on_delete=models.CASCADE, related_name='matchHistory')
     winner = models.ForeignKey(Profile, related_name='winner', on_delete=models.CASCADE)
     loser = models.ForeignKey(Profile, related_name='loser', on_delete=models.CASCADE)
     winner_score = models.IntegerField()

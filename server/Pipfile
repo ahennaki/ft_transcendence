@@ -17,6 +17,8 @@ django-otp = "*"
 qrcode = "*"
 pyjwt = "*"
 python-memcached = "*"
+django-storages = {extras = ["boto3"], version = "*"}
+pymemcache = "*"
 
 [dev-packages]
 

@@ -2,6 +2,7 @@ from django.contrib.auth    import get_user_model
 from rest_framework         import serializers
 from ..models               import CustomUser
 from prfl.models            import Profile
+from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
@@ -20,8 +21,11 @@ class CustomUserSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        user = CustomUser.objects.create_user(**validated_data)
-
+        try:
+            user = CustomUser.objects.create_user(**validated_data)
+        except ValidationError as e:
+            raise serializers.ValidationError(e.message_dict)
+            
         Profile.objects.create(
             user=user,
             email=validated_data.get('email'),

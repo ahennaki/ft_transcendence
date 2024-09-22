@@ -63,8 +63,7 @@ class TournamentJoinSerializer(serializers.Serializer):
         if TournamentParticipant.objects.filter(tournament=tournament, user=user).exists():
             raise serializers.ValidationError({"detail": "You are already a participant in this tournament."})
 
-        MAX_PARTICIPANTS = 8
-        if tournament.participants.count() >= MAX_PARTICIPANTS:
+        if tournament.participants.count() >= 8:
             raise serializers.ValidationError({"detail": "Tournament has reached maximum participants."})
 
         attrs['tournament'] = tournament

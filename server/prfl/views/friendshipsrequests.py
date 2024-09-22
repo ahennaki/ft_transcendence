@@ -20,7 +20,18 @@ class FriendshipsRequestsView(generics.GenericAPIView):
             'from_user__picture', 
             'from_user__rank'
         )
+        formatted_data = [
+            {
+                'username': item['from_user__username'],
+                'is_online': item['from_user__is_online'],
+                'picture': item['from_user__picture'],
+                'rank': item['from_user__rank']
+            }
+            for item in friendshiprequests_data
+        ]
+
         return JsonResponse(
-            {"friendshiprequests": list(friendshiprequests_data)},
-            status = status.HTTP_200_OK,
+            formatted_data,
+            safe=False, 
+            status=status.HTTP_200_OK,
         )

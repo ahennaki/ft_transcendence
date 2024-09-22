@@ -1,0 +1,52 @@
+from rest_framework                 import generics, status
+from django.http                    import JsonResponse
+from authentication.utils           import Authenticate
+from channels.layers                import get_channel_layer
+from asgiref.sync                   import async_to_sync
+from ..models                       import FriendRequest, Profile, Notification
+from ..utils.connections_manager    import connected_clients, clients_lock 
+
+class SendPlayWithMeRequestView(generics.GenericAPIView):
+    def post(self, request):
+        print("^__________")
+        user = Authenticate(request)
+        if not user.is_authenticated:
+            return JsonResponse(
+                {"message": "User is not authenticated"},
+                status = status.HTTP_401_UNAUTHORIZED
+            )
+        username = request.data.get('username')
+        if not username:
+            return JsonResponse(
+                {"message": "Username is required"},
+                status = status.HTTP_400_BAD_REQUEST
+            )
+        try: 
+            profile = Profile.objects.get(username=username)
+        except Profile.DoesNotExist:
+            return JsonResponse(
+                {"message": "User does not exist"},
+                status = status.HTTP_404_NOT_FOUND
+            )
+        user.profile.isInviting = True
+        user.profile.save()
+        Notification.objects.create(profile=profile, content=f"You have a PLAYWITHME request from {user.username}", from_user=user.username)
+        channel_layer = get_channel_layer()
+        async_to_sync(self.handle_request)(user.username, username, channel_layer)
+        return JsonResponse(
+            {"message": "Friend Request sent successfully"},
+            status = status.HTTP_200_OK
+        )
+
+    async def handle_request(self, username1, username2, channel_layer):
+        async with clients_lock:
+            channel_name = connected_clients.get(username2)
+            if channel_name:
+                print(":::::::::::: Sending ........")
+                await channel_layer.send(
+                    channel_name,
+                    {
+                        "type": "send_playwithme_request",
+                        "from": username1,
+                    }
+                )

@@ -1,22 +1,5 @@
 from django.urls import path
-from .views import (
-    SignUpView, 
-    TokenView,
-    GnrToken,
-    LogoutView,
-    TokenRefreshView,
-    GoogleOAuthView,
-    IntraOAuthView,
-    VerifyPasswd,
-    Enable2fa,
-    Disable2fa,
-    VerifyDevice,
-    Verify2fa,
-    GenerateBackupCodes,
-    ChangePasswd,
-    RequestReset,
-    ResetPasswd,
-)
+from .views import *
 
 urlpatterns = [
     path('signup/', SignUpView.as_view(), name='signup'),
@@ -35,4 +18,6 @@ urlpatterns = [
     path('passwordrecovery/', RequestReset.as_view(), name='Request reset password'),
     path('passwordreset/<str:token>/', ResetPasswd.as_view(), name='Password reset'),
     path('passwordchange/', ChangePasswd.as_view(), name='Password change'),
+    path('deleteaccount/', DeleteAccountView.as_view()),
+    path('deleteaccount/check/<str:token>/', DeleteAccountAffected.as_view()),
 ]

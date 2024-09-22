@@ -31,8 +31,12 @@ class BlockFriendView(generics.GenericAPIView):
                 status = status.HTTP_400_BAD_REQUEST
             )
         friendship = get_friendship(user.profile, to_block)
-        if friendship:
-            friendship.delete()
+        if not friendship:
+            return JsonResponse(
+                {"message": "This user is not a friend"},
+                status = status.HTTP_400_BAD_REQUEST,
+            )
+        friendship.delete()
         try:
             BlockedFriend.objects.get(blocker=user.profile, blocked_friend=to_block)
             return JsonResponse(
@@ -40,7 +44,8 @@ class BlockFriendView(generics.GenericAPIView):
                 status = status.HTTP_400_BAD_REQUEST,
             )
         except BlockedFriend.DoesNotExist:
-            BlockedFriend.objects.create(blocker=user.profile, blocked_friend=to_block)
+            pass
+        BlockedFriend.objects.create(blocker=user.profile, blocked_friend=to_block)
         
         return JsonResponse(
             {"message": "User blocked successfully"},

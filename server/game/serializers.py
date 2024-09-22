@@ -25,10 +25,4 @@ class MatchHistorySerializer(serializers.ModelSerializer):
 class SettingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Setting
-        fields = ['id', 'mapname', 'ballcolor', 'score', 'botlevel', 'profile']
-        read_only_fields = ['id', 'profile']
-
-# class GameInvitationSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = GameInvitation
-#         fields = ['id', 'sender', 'receiver', 'status', 'created_at']
+        fields = ['mapname', 'ballcolor', 'score', 'botlevel', 'profile']

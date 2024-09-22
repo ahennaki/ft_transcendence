@@ -203,15 +203,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = '/static/'
-
-# Directory where collectstatic will collect static files for deployment
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# # Additional locations of static files
-# STATICFILES_DIRS = [
-#     os.path.join(BASE_DIR, 'static'),
-# ]
+STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -239,3 +231,16 @@ EMAIL_HOST_USER='teamfttranscendence@gmail.com'
 EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL='teamfttranscendence@gmail.com'
 
+# AWS S3 Configuration
+AWS_ACCESS_KEY_ID = 'AKIAYU2GNIVTML776A3P'
+AWS_SECRET_ACCESS_KEY = '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'
+AWS_STORAGE_BUCKET_NAME = 'ft-transcendence2'
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+
+AWS_S3_FILE_OVERWRITE = True
+AWS_DEFAULT_ACL = None  # Disable default ACL to avoid any permission issues
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'

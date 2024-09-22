@@ -10,6 +10,7 @@ from .serializers               import MatchSerializer, SettingSerializer, Match
 from channels.layers            import get_channel_layer
 from asgiref.sync               import async_to_sync, sync_to_async 
 from authentication.utils       import print_red, print_green, print_yellow
+from django.db                  import models
 import time
 
 class MatchStatusView(generics.GenericAPIView):
@@ -25,28 +26,30 @@ class MatchStatusView(generics.GenericAPIView):
                 'error': 'Match not found'
                 }, status=status.HTTP_404_NOT_FOUND)
 
-
 class PlayerMatchHistoryView(generics.ListAPIView):
     serializer_class = MatchHistorySerializer
 
     def get(self, request, username):
-        print_yellow(f"fitshing mach history from username: {username}")
         try:
-            player_profile = Profile.objects.get(username=username)
+            profile = Profile.objects.get(username=username)
+
         except Profile.DoesNotExist:
             return JsonResponse(
                 {'error': 'Profile not found.'},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        return MatchHistory.objects.filter(
-            models.Q(winner=player_profile) | models.Q(loser=player_profile)
+        match_history = MatchHistory.objects.filter(
+            models.Q(winner=profile) | models.Q(loser=profile)
         )
-    
-    def list(self, request, *args, **kwargs):
-        response = super().list(request, *args, **kwargs)
-        print_green(f'data: {response.data}')
-        return response
+        if match_history.exists():
+            serializer = self.serializer_class(match_history, many=True)
+            return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse(
+                {'message': 'No match_history found for this profile.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 class SettingUpdateView(generics.GenericAPIView):
     serializer_class = SettingSerializer
@@ -95,10 +98,25 @@ class ProfileSettingsView(generics.GenericAPIView):
         settings = Setting.objects.filter(profile=profile)
         if settings.exists():
             serializer = self.serializer_class(settings, many=True)
-            print_yellow(f'data: {serializer.data}')
             return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
         else:
             return JsonResponse(
                 {'message': 'No settings found for this profile.'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+class ProfileIdDataView(generics.GenericAPIView):
+    serializer_class = ProfileSerializer
+
+    def get(self, request, profile_id):
+        try:
+            profile = Profile.objects.get(id=profile_id)
+        except Profile.DoesNotExist:
+            return JsonResponse(
+                {'error': 'Profile not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = self.serializer_class(profile)
+        return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+            

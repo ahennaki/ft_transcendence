@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/Users/aennaki/Desktop/trans/fr/ft_transcendence/server/env"
+set -gx VIRTUAL_ENV "/goinfre/aennaki/transcendence_backend/ft_transcendence/server/env"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

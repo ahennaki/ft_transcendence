@@ -5,5 +5,5 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = (
-            'id', 'username', 'picture', 'rank', 'badge', 'isSettings', 'background_picture'
+            'id', 'username', 'picture', 'rank', 'badge', 'isSettings', 'isInviting', 'background_picture'
         )

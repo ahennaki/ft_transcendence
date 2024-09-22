@@ -11,5 +11,3 @@ class Friend(models.Model):
         unique_together = (('profile', 'friend'),)
     def __str__(self):
         return f"{self.profile.username} is friend with {self.friend.username}"
-    
-    

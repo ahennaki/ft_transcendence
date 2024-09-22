@@ -1,7 +1,12 @@
-from django.apps                import apps
-from django.db                  import models
-from django.contrib.auth.models import AbstractUser, UserManager
-from django.utils.translation   import gettext_lazy as _
+from django.apps                                    import apps
+from django.db                                      import models
+from django.contrib.auth.models                     import AbstractUser, UserManager
+from django.utils.translation                       import gettext_lazy as _
+from authentication.models.utils.validate_email     import validate_email
+from authentication.models.utils.validate_passwd    import validate_password
+from authentication.models.utils.validate_name      import validate_name
+from authentication.models.utils.validate_username  import validate_username
+from django.core.exceptions                         import ValidationError
 
 class CustomUserManager(UserManager):
     
@@ -17,6 +22,11 @@ class CustomUserManager(UserManager):
         if not email:
             raise ValueError("The given email must be set")
         
+        try:
+            validate_password(password)
+        except ValidationError as e:
+            raise ValidationError({"password": str(e)})
+    
         email = self.normalize_email(email)
         GlobalUserModel = apps.get_model(
             self.model._meta.app_label,
@@ -43,6 +53,30 @@ class CustomUserManager(UserManager):
 
 class CustomUser(AbstractUser):
    
+    first_name = models.CharField(
+        _("first name"),
+        max_length=150,
+        blank=True,
+        validators=[validate_name]
+    )
+    last_name = models.CharField(
+        _("last name"),
+        max_length=150,
+        blank=True,
+        validators=[validate_name]
+    )
+    email = models.EmailField(
+        _("email address"),
+        unique=True,
+        validators=[validate_email]
+    )
+    username = models.CharField(
+        _("username"),
+        max_length=150,
+        unique=True,
+        validators=[validate_username]
+    )
+    
     last_login = models.DateTimeField(_("last login"), auto_now=True)
     token_last_change = models.DateTimeField(null=True, blank=True)
     is_2fa_enabled = models.BooleanField(_("is_2fa_enabled"), default=False)

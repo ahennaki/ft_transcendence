@@ -3,11 +3,12 @@ from django.http                    import JsonResponse
 from authentication.utils           import Authenticate
 from channels.layers                import get_channel_layer
 from asgiref.sync                   import async_to_sync
-from ..models                       import FriendRequest, Profile
+from django.db.models               import Q
+from ..models                       import FriendRequest, Profile, Notification, BlockedFriend
 from ..utils.connections_manager    import connected_clients, clients_lock 
 
 class SendFriendshipRequestView(generics.GenericAPIView):
-    async def post(self, request):
+    def post(self, request):
         user = Authenticate(request)
         if not user.is_authenticated:
             return JsonResponse(
@@ -20,25 +21,59 @@ class SendFriendshipRequestView(generics.GenericAPIView):
                 {"message": "Username is required"},
                 status = status.HTTP_400_BAD_REQUEST
             )
-        profile = Profile.objects.get(username=username)
-        if not profile:
+        if username == user.username:
+            return JsonResponse(
+                {"message": "You cannot send a friendship request to yourself"},
+                status = status.HTTP_403_FORBIDDEN
+            )
+        try:
+            profile = Profile.objects.get(username=username)
+        except Profile.DoesNotExist:
             return JsonResponse(
                 {"message": "User does not exist"},
                 status = status.HTTP_404_NOT_FOUND
             )
-        FriendRequest.objects.create(from_user=user.profile,to_user=profile)
-        async with clients_lock:
-            channel_name = connected_clients[username]
+        try:
+            FriendRequest.objects.get(
+                Q(from_user=user.profile, to_user=profile) |
+                Q(from_user=profile, to_user=user.profile)
+            )
+            return JsonResponse (
+                {"message": f"You've already sent a friendship request, or {username} has already sent one."},
+                status = status.HTTP_403_FORBIDDEN
+            )
+        except FriendRequest.DoesNotExist:
+            pass
+        try:
+            BlockedFriend.objects.get(
+                Q(blocker=user.profile, blocked_friend=profile) |
+                Q(blocker=profile, blocked_friend=user.profile)
+            )
+            return JsonResponse (
+                {"message": f"You've already blocked this user or {username} has blocked you."},
+                status = status.HTTP_403_FORBIDDEN
+            )
+        except BlockedFriend.DoesNotExist:
+            pass
+        FriendRequest.objects.create(from_user=user.profile, to_user=profile)
+        Notification.objects.create(profile=profile, content=f"You have a FriendShip request from {user.username}", from_user=user.username)
         channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.send)(
-            channel_name,
-            {
-                "type": "send_friendship_request",
-                "from": user.username,
-            }
-        )
-
+        async_to_sync(self.handle_request)(user.username, username, channel_layer)
+        
         return JsonResponse(
-            {"message": "Friend Request sent successfully"},
+            {"message": "Friendship Request sent successfully"},
             status = status.HTTP_200_OK
         )
+
+    async def handle_request(self, username1, username2, channel_layer):
+        async with clients_lock:
+            channel_name = connected_clients.get(username2)
+            if channel_name:
+                print(":::::::::::: Sending ........")
+                await channel_layer.send(
+                    channel_name,
+                    {
+                        "type": "send_friendship_request",
+                        "from": username1,
+                    }
+                )

@@ -4,7 +4,7 @@ from prfl.models    import Profile
 class Chat(models.Model):
     user1 = models.ForeignKey(Profile, related_name='user1_chats', on_delete=models.CASCADE)
     user2 = models.ForeignKey(Profile, related_name='user2_chats', on_delete=models.CASCADE)
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=200, unique=True)
     last_message_time = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
     

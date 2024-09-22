@@ -25,13 +25,9 @@ $(DETACHED_SERVICES):
 	@printf "$(PURPLE) 	- Build and start the container in detached mode $(NORMAL)\n"
 	@ docker-compose -f $(COMPOSE_FILE) up $@
 
-
-
-
 down:
 	@printf "$(PURPLE) 	- Stop and Remove all services $(NORMAL)\n"
 	@ docker-compose -f $(COMPOSE_FILE) down
-
 
 clean:
 	@printf "$(PURPLE) 	- Stop and Remove all services && Clean everything else :: Network, volumes, images ... $(NORMAL)\n"

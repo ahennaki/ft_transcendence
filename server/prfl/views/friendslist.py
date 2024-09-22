@@ -1,7 +1,7 @@
 from rest_framework             import generics, status
 from django.http                import JsonResponse
 from authentication.utils       import Authenticate
-from ..models                   import Friend
+from ..utils                    import friendslist
 
 class FriendsListView(generics.GenericAPIView):
     def get(self, request):
@@ -11,16 +11,10 @@ class FriendsListView(generics.GenericAPIView):
                 {"message": "User is not authenticated"},
                 status = status.HTTP_401_UNAUTHORIZED
             )
-        profile = user.profile
-        friends = Friend.objects.filter(profile=profile)
-
-        friends_data = friends.values(
-            'friend__username', 
-            'friend__is_online', 
-            'friend__picture', 
-            'friend__rank'
-        )
+        friends_list = friendslist(user.profile)
+        
         return JsonResponse(
-            {"friends": list(friends_data)},
+            friends_list,
+            safe=False, 
             status = status.HTTP_200_OK,
         )

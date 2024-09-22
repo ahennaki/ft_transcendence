@@ -3,18 +3,11 @@ from datetime import timedelta
 from .models import Tournament, TournamentParticipant, Match
 
 def seed_players(tournament):
-    """
-    Seeds players based on their rank or randomly.
-    Assuming higher rank indicates a better seed.
-    """
     participants = list(tournament.participants.all())
-    participants.sort(key=lambda p: p.user.profile.rank, reverse=True)
+    # participants.sort(key=lambda p: p.user.profile.rank, reverse=True)
     return participants
 
 def create_initial_matches(tournament):
-    """
-    Creates Quarterfinal matches based on seeded participants.
-    """
     participants = seed_players(tournament)
     pairings = [
         (participants[0], participants[7]),
@@ -35,9 +28,6 @@ def create_initial_matches(tournament):
         )
 
 def progress_tournament(tournament):
-    """
-    Progresses the tournament to the next round based on completed matches.
-    """
     current_round = None
     if tournament.status == 'ongoing':
         incomplete_matches = tournament.matches.filter(completed=False).order_by('-round_number')
@@ -64,9 +54,6 @@ def progress_tournament(tournament):
         declare_champion(tournament)
 
 def create_semifinals(tournament):
-    """
-    Creates Semifinal matches based on Quarterfinal winners.
-    """
     quarterfinals = tournament.matches.filter(round_number=1, completed=True).order_by('id')
     winners = [match.winner for match in quarterfinals]
 
@@ -95,9 +82,6 @@ def create_semifinals(tournament):
     return True
 
 def create_final(tournament):
-    """
-    Creates the Final match based on Semifinal winners.
-    """
     semifinals = tournament.matches.filter(round_number=2, completed=True).order_by('id')
     winners = [match.winner for match in semifinals]
 
@@ -118,9 +102,6 @@ def create_final(tournament):
     return True
 
 def declare_champion(tournament):
-    """
-    Declares the champion of the tournament based on the Final match.
-    """
     final = tournament.matches.filter(round_number=3, completed=True).first()
     if final and final.winner:
         tournament.status = 'completed'

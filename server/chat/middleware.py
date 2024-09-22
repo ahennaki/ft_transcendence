@@ -1,8 +1,8 @@
-from channels.middleware import BaseMiddleware
-from channels.db import database_sync_to_async
+from channels.middleware        import BaseMiddleware
+from channels.db                import database_sync_to_async
 from django.contrib.auth.models import AnonymousUser
-from django.contrib.auth import get_user_model
-from authentication.utils import decodeJWTToken, print_green, print_red, print_yellow
+from django.contrib.auth        import get_user_model
+from authentication.utils       import decodeJWTToken, print_green, print_red, print_yellow
 import hashlib
 
 User = get_user_model()
@@ -10,21 +10,18 @@ User = get_user_model()
 class TokenAuthenticationMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
         print_red('websocket ... In middleware') 
-        # print_green(scope['headers'])
+        print_green(scope['headers'])
         headers = dict(scope['headers'])
-        # print_yellow(headers)
+        print_yellow(headers)
         cookies = headers.get(b'cookie', b'').decode()
         access_token = None
-        # print_green(cookies)
-
+        print_green(cookies)
+        if not cookies:
+            return
         for item in cookies.split(';'):
-            parts = item.strip().split('=')
-            if len(parts) == 2:
-                key, value = parts
-                if key == 'access_token':
-                    access_token = value
-            else:
-                print_yellow(f"Skipping unexpected cookie format: {item}")
+            key, value = item.strip().split('=')
+            if key == 'access_token':
+                access_token = value
 
         if access_token:
             payload = decodeJWTToken(access_token)
@@ -32,7 +29,7 @@ class TokenAuthenticationMiddleware(BaseMiddleware):
                 print_green('websocket ... Invalid token')
                 scope['user'] = AnonymousUser()
             else:
-                id = payload.get('user_id')
+                id = payload['user_id']
                 if id:
                     try:
                         user = await database_sync_to_async(User.objects.get)(id=id)
@@ -42,6 +39,7 @@ class TokenAuthenticationMiddleware(BaseMiddleware):
                         scope['user'] = AnonymousUser()
                 else:
                     scope['user'] = AnonymousUser()
+
         else:
             scope['user'] = AnonymousUser()
 

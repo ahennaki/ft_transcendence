@@ -5,7 +5,7 @@ from django.conf    import settings
 def ExchangeForTokens42(code):
     client_id = settings['GOOGLE_CLIENT_ID']
     client_secret = settings['GOOGLE_CLIENT_SECRET']
-    redirect_uri = 'https://www.aennaki.me/api/oauth/intra42/callback/' #settings['GOOGLE_REDIRECT_URI']
+    redirect_uri = 'https://www.fttran.tech/api/oauth/intra42/callback/' #settings['GOOGLE_REDIRECT_URI']
     url = 'https://api.intra.42.fr/oauth/token'
     data = {
         'code': code,

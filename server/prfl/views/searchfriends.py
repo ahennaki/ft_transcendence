@@ -2,6 +2,7 @@ from rest_framework             import generics, status
 from django.http                import JsonResponse
 from authentication.utils       import Authenticate
 from ..models                   import Friend
+from ..utils                    import friendslist
 
 class SearchFriendsView(generics.GenericAPIView):
     def post(self, request):
@@ -12,20 +13,9 @@ class SearchFriendsView(generics.GenericAPIView):
                 status = status.HTTP_401_UNAUTHORIZED
             )
         prefix = request.data.get('prefix')
-        limit = int(request.GET.get('limit', 10))
-        if not prefix:
-            friends = Friend.objects.all()
-        else:
-            friends = Friend.objects.filter(username__icontains=prefix)
-
-        friends_list = friends[:limit]
-        friends_data = friends_list.values(
-            'username', 
-            'is_online', 
-            'picture', 
-            'rank'
-        )
+        friends_data = friendslist(user.profile, prefix=prefix)
         return JsonResponse(
-            {"friends": list(friends_data)},
+            friends_data[:20],
+            safe=False,
             status=status.HTTP_200_OK
         )

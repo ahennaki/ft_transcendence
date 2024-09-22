@@ -5,7 +5,7 @@ from django.conf    import settings
 def ExchangeForTokensGG(code):
     client_id = settings['GOOGLE_CLIENT_ID']
     client_secret = settings['GOOGLE_CLIENT_SECRET']
-    redirect_uri = 'https://www.aennaki.me/api/oauth/google/callback/'
+    redirect_uri = 'https://www.fttran.tech/api/oauth/google/callback/'
     url = 'https://oauth2.googleapis.com/token'
     data = {
         'code': code,
