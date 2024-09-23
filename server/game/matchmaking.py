@@ -4,7 +4,9 @@ from prfl.models                import Profile
 from prfl.serializers           import ProfileSerializer
 from asyncio                    import Lock
 from authentication.utils       import print_red, print_green, print_yellow
+# from .consumers                 import invite_players
 import asyncio
+
 matchmaking_lock = Lock()
 
 @database_sync_to_async

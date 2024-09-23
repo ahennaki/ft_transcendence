@@ -14,6 +14,7 @@ import time
 import asyncio
 
 active_connections = {}
+# invite_players = {}
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -62,6 +63,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.add_player_to_queue()
             await matchmaking(self)
         if action == 'invitation':
+            # if self.user.id not in invite_players:
+            #     invite_players[self.user.id] = 0
             await invited_player(self, data)
         elif action == 'disconnect':
             self.isGaming = False

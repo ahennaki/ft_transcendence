@@ -1,13 +1,53 @@
 from rest_framework 			import generics, status
-from rest_framework.permissions import IsAuthenticated
 from django.http                import JsonResponse
-from .serializers 				import TournamentSerializer, TournamentCreateSerializer, TournamentJoinSerializer
 from .models 					import Tournament, TournamentParticipant, Match
-from .utils						import progress_tournament
+from .helpers					import progress_tournament
+from authentication.utils       import print_red, print_green, print_yellow
+from .serializers 				import (
+    TournamentNameSerializer,
+    TournamentSerializer,
+    AliasCheckSerializer,
+    TournamentCreateSerializer,
+    TournamentJoinSerializer,
+    MatchUpdateSerializer,
+    TournamentNameCheckSerializer
+)
+
+class TournamentNameListView(generics.GenericAPIView):
+    queryset = Tournament.objects.filter(status='upcoming')
+    serializer_class = TournamentNameSerializer
+
+    def get(self, request, *args, **kwargs):
+        tournaments = self.get_queryset()
+        serializer = self.get_serializer(tournaments, many=True)
+        return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
+
+class AliasAvailabilityCheckView(generics.GenericAPIView):
+
+    def post(self, request, *args, **kwargs):
+        serializer = AliasCheckSerializer(data=request.data)
+        print_yellow(f'data= {request.data}')
+        if serializer.is_valid():
+            alias_taken = serializer.validated_data['alias_taken']
+            if not alias_taken:
+                return JsonResponse({'success': 'valide alias'}, status=status.HTTP_200_OK)
+            else:
+                return JsonResponse({'error': 'invalide alias'}, status=status.HTTP_400_BAD_REQUEST)
+
+class TournamentNameCheckView(generics.GenericAPIView):
+
+    def post(self, request, *args, **kwargs):
+        serializer = TournamentNameCheckSerializer(data=request.data)
+        if serializer.is_valid():
+            name_taken = serializer.validated_data['name_taken']
+            print_red(f'name_taken {name_taken}')
+            if not name_taken:
+                return JsonResponse({'success': 'valide name'}, status=status.HTTP_200_OK)
+            else:
+                return JsonResponse({'error': 'invalide name'}, status=status.HTTP_400_BAD_REQUEST)
 
 class CreateTournamentView(generics.CreateAPIView):
     serializer_class = TournamentCreateSerializer
-    permission_classes = [IsAuthenticated]
 
     def get_serializer_context(self):
         return {'request': self.request}
@@ -22,7 +62,6 @@ class CreateTournamentView(generics.CreateAPIView):
 
 class JoinTournamentView(generics.CreateAPIView):
     serializer_class = TournamentJoinSerializer
-    permission_classes = [IsAuthenticated]
 
     def get_serializer_context(self):
         return {'request': self.request}
@@ -36,7 +75,6 @@ class JoinTournamentView(generics.CreateAPIView):
 
 class ListTournamentsView(generics.ListAPIView):
     serializer_class = TournamentSerializer
-    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Tournament.objects.filter(status='upcoming')
@@ -44,7 +82,6 @@ class ListTournamentsView(generics.ListAPIView):
 class UpdateMatchView(generics.UpdateAPIView):
     queryset = Match.objects.all()
     serializer_class = MatchUpdateSerializer
-    permission_classes = [IsAuthenticated]
 
     def update(self, request, *args, **kwargs):
         match = self.get_object()

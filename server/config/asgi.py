@@ -21,6 +21,7 @@ django.setup()
 import prfl.routing
 import chat.routing
 import game.routing
+import tournament.routing
 from chat.middleware import TokenAuthenticationMiddleware
 
 application = ProtocolTypeRouter(
@@ -33,6 +34,7 @@ application = ProtocolTypeRouter(
                         prfl.routing.websocket_urlpatterns
                         + chat.routing.websocket_urlpatterns
                         + game.routing.websocket_urlpatterns
+                        + tournament.routing.websocket_urlpatterns
                     )
                 )
             )

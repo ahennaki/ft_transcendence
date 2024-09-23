@@ -1,6 +1,6 @@
 from django.db 					import models
 from django.utils.translation 	import gettext_lazy as _
-from authentication.models 		import CustomUser
+from prfl.models 		        import Profile
 import uuid
 
 class Tournament(models.Model):
@@ -13,8 +13,7 @@ class Tournament(models.Model):
     ]
 
     name = models.CharField(max_length=255, unique=True)
-    description = models.TextField(blank=True, null=True)
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='tournaments_created')
+    created_by = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='tournaments_created')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='upcoming')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -24,11 +23,12 @@ class Tournament(models.Model):
 
 class TournamentParticipant(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name='participants')
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='tournaments_participated')
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='tournaments_participated')
+    alias = models.CharField(max_length=255, unique=True)
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('tournament', 'user')
+        unique_together = ('tournament', 'user', 'alias')
 
     def __str__(self):
         return f"{self.user.username} in {self.tournament.name}"
@@ -49,6 +49,7 @@ class Match(models.Model):
     completed = models.BooleanField(default=False)
     score_player1 = models.IntegerField(default=0)
     score_player2 = models.IntegerField(default=0)
+    # match_number = models.IntegerField(default=0)
     previous_match_player1 = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='next_match_player1')
     previous_match_player2 = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='next_match_player2')
 
