@@ -11,12 +11,13 @@ async def initialize_data(consumer):
     consumer.canvas = {"w": 700, "h": 450}
     consumer.score1 = 0
     consumer.score2 = 0
-    consumer.player1_id = None
-    consumer.player2_id = None
+    consumer.player1_username = None
+    consumer.player2_username = None
     consumer.match = None
     consumer.match_id = None
     consumer.player_number = None
     consumer.isGaming = False
+    consumer.isTournament = False
 
 async def score_update(consumer, data):
     consumer.score1 = data["player1_score"]
@@ -24,7 +25,7 @@ async def score_update(consumer, data):
 
     if consumer.score1 >= 10 or consumer.score2 >= 10:
         consumer.isGaming = False
-        if consumer.score1 > consumer.score2 and consumer.user.id == consumer.player1_id:
+        if consumer.score1 > consumer.score2 and consumer.user.username == consumer.player1_username:
             await end_game(consumer, False)
-        elif consumer.score2 > consumer.score1 and consumer.user.id == consumer.player2_id:
+        elif consumer.score2 > consumer.score1 and consumer.user.username == consumer.player2_username:
             await end_game(consumer, False)

@@ -1,6 +1,6 @@
 from rest_framework 			import generics, status
 from django.http                import JsonResponse
-from .models 					import Tournament, TournamentParticipant, Match
+from .models 					import Tournament, TournamentParticipant, TournamentMatch
 from .helpers					import progress_tournament
 from authentication.utils       import print_red, print_green, print_yellow
 from .serializers 				import (
@@ -27,12 +27,15 @@ class AliasAvailabilityCheckView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = AliasCheckSerializer(data=request.data)
         print_yellow(f'data= {request.data}')
+        
         if serializer.is_valid():
             alias_taken = serializer.validated_data['alias_taken']
             if not alias_taken:
-                return JsonResponse({'success': 'valide alias'}, status=status.HTTP_200_OK)
+                return JsonResponse({'success': 'valide name'}, status=status.HTTP_200_OK)
             else:
-                return JsonResponse({'error': 'invalide alias'}, status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse({'error': 'invalide name'}, status=status.HTTP_400_BAD_REQUEST)
+        print_red(f'errors= {serializer.errors}')
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class TournamentNameCheckView(generics.GenericAPIView):
 
@@ -80,7 +83,7 @@ class ListTournamentsView(generics.ListAPIView):
         return Tournament.objects.filter(status='upcoming')
 
 class UpdateMatchView(generics.UpdateAPIView):
-    queryset = Match.objects.all()
+    queryset = TournamentMatch.objects.all()
     serializer_class = MatchUpdateSerializer
 
     def update(self, request, *args, **kwargs):

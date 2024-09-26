@@ -37,7 +37,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        self.group_name = f"user_{self.user.id}"
+        self.group_name = f"user_{self.user.username}"
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await initialize_data(self)
 
@@ -62,10 +62,10 @@ class GameConsumer(AsyncWebsocketConsumer):
         if action == 'join_queue':
             await self.add_player_to_queue()
             await matchmaking(self)
-        if action == 'invitation':
+        # elif action == 'invitation':
             # if self.user.id not in invite_players:
             #     invite_players[self.user.id] = 0
-            await invited_player(self, data)
+            # await invited_player(self, data)
         elif action == 'disconnect':
             self.isGaming = False
             await self.close()
@@ -85,8 +85,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         self.start_time = time.time()
         self.isGaming = True
         self.match_id = data['match_id']
-        self.match, self.player1_id, self.player2_id = await self.get_player_ids(self.match_id)
-        if self.user.id == self.player1_id:
+        self.match, self.player1_username, self.player2_username = await self.get_player_usernames(self.match_id)
+        if self.user.username == self.player1_username:
             asyncio.create_task(game_loop(self))
 
     async def send_match_info(self, event):
@@ -95,15 +95,15 @@ class GameConsumer(AsyncWebsocketConsumer):
             'player': event['player'], 'match_id': event['match_id'],
             'type': 'match_found', 'player_number': self.player_number}))
 
-    async def game_update(self, event):
-        data = event.get('data', {})
-        await self.send(text_data=json.dumps(event["data"]))
-
     async def waiting(self, event):
         data = event.get('data', {})
         await self.send(text_data=json.dumps(event["data"]))
 
     async def no_match_found(self, event):
+        data = event.get('data', {})
+        await self.send(text_data=json.dumps(event["data"]))
+
+    async def game_update(self, event):
         data = event.get('data', {})
         await self.send(text_data=json.dumps(event["data"]))
 
@@ -120,10 +120,10 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(event["data"]))
 
     @database_sync_to_async
-    def get_player_ids(self, match_id):
+    def get_player_usernames(self, match_id):
         try:
             match = Match.objects.get(id=match_id)
-            return match, match.player1.user.id, match.player2.user.id
+            return match, match.player1.user.username, match.player2.user.username
         except Match.DoesNotExist:
             return None, None, None
 

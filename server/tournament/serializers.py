@@ -1,7 +1,9 @@
 from rest_framework     import serializers
-from .models            import Tournament, TournamentParticipant, Match
+from .models            import Tournament, TournamentParticipant, TournamentMatch
 from django.db          import transaction
 from prfl.serializers   import ProfileSerializer
+from prfl.models        import Profile
+from .helpers           import create_initial_matches
 
 class TournamentParticipantSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(source='user', read_only=True)
@@ -40,6 +42,7 @@ class TournamentNameCheckSerializer(serializers.Serializer):
 class AliasCheckSerializer(serializers.Serializer):
     tournament_name = serializers.CharField(max_length=255)
     alias = serializers.CharField(max_length=255)
+    username = serializers.CharField(max_length=255)
 
     def validate_tournament_name(self, value):
         if not Tournament.objects.filter(name__iexact=value).exists():
@@ -49,6 +52,7 @@ class AliasCheckSerializer(serializers.Serializer):
     def validate(self, attrs):
         tournament_name = attrs.get('tournament_name')
         alias = attrs.get('alias')
+        username = attrs.get('username')
 
         try:
             tournament = Tournament.objects.get(name__iexact=tournament_name)
@@ -59,6 +63,9 @@ class AliasCheckSerializer(serializers.Serializer):
             attrs['alias_taken'] = True
         else:
             attrs['alias_taken'] = False
+
+        if TournamentParticipant.objects.filter(tournament=tournament, user__user__username=username).exists():
+            raise serializers.ValidationError({"detail": "User is already a participant in this tournament with a different alias."})
 
         return attrs
 
@@ -138,17 +145,24 @@ class TournamentJoinSerializer(serializers.Serializer):
             if tournament.participants.count() == 8:
                 tournament.status = 'ongoing'
                 tournament.save()
-                from .utils import create_initial_matches
                 create_initial_matches(tournament)
 
         return participant
 
 class MatchUpdateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Match
+        model = TournamentMatch
         fields = ['winner', 'score_player1', 'score_player2', 'completed']
 
     def validate(self, attrs):
         if attrs.get('completed') and not attrs.get('winner'):
             raise serializers.ValidationError("Winner must be specified if the match is completed.")
         return attrs
+
+class MatchSerializer(serializers.ModelSerializer):
+    player1 = TournamentParticipantSerializer(read_only=True)
+    player2 = TournamentParticipantSerializer(read_only=True)
+
+    class Meta:
+        model = TournamentMatch
+        fields = ['id', 'round_number', 'player1', 'player2', 'completed']

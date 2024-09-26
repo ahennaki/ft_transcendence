@@ -11,11 +11,11 @@ async def game_loop(consumer):
         data = {"type": "game_update", "ball": consumer.ball}
 
         await consumer.channel_layer.group_send(
-            f"user_{consumer.player1_id}",
+            f"user_{consumer.player1_username}",
             {"type": "game_update", "data": data}
         )
         await consumer.channel_layer.group_send(
-            f"user_{consumer.player2_id}",
+            f"user_{consumer.player2_username}",
             {"type": "game_update", "data": data}
         )
 
@@ -94,10 +94,10 @@ async def send_score_update(consumer):
 
     if consumer.isGaming:
         await consumer.channel_layer.group_send(
-            f"user_{consumer.player1_id}",
+            f"user_{consumer.player1_username}",
             {"type": "score_update", "data": score_update}
         )
         await consumer.channel_layer.group_send(
-            f"user_{consumer.player2_id}",
+            f"user_{consumer.player2_username}",
             {"type": "score_update", "data": score_update}
         )

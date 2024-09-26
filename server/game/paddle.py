@@ -20,11 +20,11 @@ async def broadcast_paddle_positions(consumer, paddle, nb):
 
     if nb == 2 and consumer.isGaming:
         await consumer.channel_layer.group_send(
-            f"user_{consumer.player1_id}",
+            f"user_{consumer.player1_username}",
             {"type": "paddle_update", "data": data}
         )
     elif nb == 1 and consumer.isGaming:
         await consumer.channel_layer.group_send(
-            f"user_{consumer.player2_id}",
+            f"user_{consumer.player2_username}",
             {"type": "paddle_update", "data": data}
         )

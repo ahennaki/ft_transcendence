@@ -32,7 +32,7 @@ async def matchmaking(consumer):
         else:
             data = {'type': 'waiting', 'message': 'Waiting for another player...'}
             await consumer.channel_layer.group_send(
-            f'user_{consumer.user.id}',
+            f'user_{consumer.user.username}',
             {'type': 'waiting', 'data': data})
 
 async def invited_player(consumer, data):
@@ -48,15 +48,15 @@ async def invited_player(consumer, data):
 async def notify_players(consumer, player1, player2, match):
     player1_data = await get_profile_data(consumer, player1)
     player2_data = await get_profile_data(consumer, player2)
-    player_id1, player_id2 = await get_player_ids(consumer, match.id)
+    player_username1, player_username2 = await get_player_usernames(consumer, match.id)
     
     await consumer.channel_layer.group_send(
-        f"user_{player_id1}",
+        f"user_{player_username1}",
         {'type': 'send_match_info', 'player': player2_data,
             'match_id': match.id, 'player_number': 1}
     )
     await consumer.channel_layer.group_send(
-        f"user_{player_id2}",
+        f"user_{player_username2}",
         {'type': 'send_match_info', 'player': player1_data,
             'match_id': match.id, 'player_number': 2}
     )
@@ -67,10 +67,10 @@ def get_profile_data(consumer, player):
     return serializer.data
 
 @database_sync_to_async
-def get_player_ids(consumer, match_id):
+def get_player_usernames(consumer, match_id):
     try:
         match = Match.objects.get(id=match_id)
-        return match.player1.user.id, match.player2.user.id
+        return match.player1.user.username, match.player2.user.username
     except Match.DoesNotExist:
         return None, None
 

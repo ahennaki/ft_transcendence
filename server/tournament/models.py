@@ -33,7 +33,7 @@ class TournamentParticipant(models.Model):
     def __str__(self):
         return f"{self.user.username} in {self.tournament.name}"
 
-class Match(models.Model):
+class TournamentMatch(models.Model):
     ROUND_CHOICES = [
         (1, 'Quarterfinal'),
         (2, 'Semifinal'),
@@ -45,7 +45,7 @@ class Match(models.Model):
     player1 = models.ForeignKey(TournamentParticipant, on_delete=models.CASCADE, related_name='matches_as_player1', null=True, blank=True)
     player2 = models.ForeignKey(TournamentParticipant, on_delete=models.CASCADE, related_name='matches_as_player2', null=True, blank=True)
     winner = models.ForeignKey(TournamentParticipant, on_delete=models.SET_NULL, null=True, blank=True, related_name='matches_won')
-    scheduled_time = models.DateTimeField()
+    # scheduled_time = models.DateTimeField()
     completed = models.BooleanField(default=False)
     score_player1 = models.IntegerField(default=0)
     score_player2 = models.IntegerField(default=0)

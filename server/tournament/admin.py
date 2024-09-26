@@ -1,6 +1,6 @@
 from django.contrib import admin
-from .models 		import Tournament, TournamentParticipant, Match
+from .models 		import Tournament, TournamentParticipant, TournamentMatch
 
 admin.site.register(Tournament)
 admin.site.register(TournamentParticipant)
-admin.site.register(Match)
+admin.site.register(TournamentMatch)
