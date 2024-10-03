@@ -18,6 +18,7 @@ async def initialize_data(consumer):
     consumer.player_number = None
     consumer.isGaming = False
     consumer.isTournament = False
+    consumer.tournament_id = None
 
 async def score_update(consumer, data):
     consumer.score1 = data["player1_score"]

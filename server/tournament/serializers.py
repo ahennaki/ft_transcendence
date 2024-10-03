@@ -120,7 +120,7 @@ class TournamentJoinSerializer(serializers.Serializer):
         if TournamentParticipant.objects.filter(tournament=tournament, user=user_profile).exists():
             raise serializers.ValidationError({"detail": "You are already a participant in this tournament."})
 
-        if tournament.participants.count() >= 8:
+        if tournament.participants.count() >= 4:
             raise serializers.ValidationError({"detail": "Tournament has reached maximum participants."})
 
         if TournamentParticipant.objects.filter(tournament=tournament, alias__iexact=alias).exists():
@@ -142,7 +142,7 @@ class TournamentJoinSerializer(serializers.Serializer):
                 alias=alias
             )
 
-            if tournament.participants.count() == 8:
+            if tournament.participants.count() == 4:
                 tournament.status = 'ongoing'
                 tournament.save()
                 create_initial_matches(tournament)

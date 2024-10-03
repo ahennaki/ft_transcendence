@@ -26,31 +26,6 @@ class MatchStatusView(generics.GenericAPIView):
                 'error': 'Match not found'
                 }, status=status.HTTP_404_NOT_FOUND)
 
-class PlayerMatchHistoryView(generics.ListAPIView):
-    serializer_class = MatchHistorySerializer
-
-    def get(self, request, username):
-        try:
-            profile = Profile.objects.get(username=username)
-
-        except Profile.DoesNotExist:
-            return JsonResponse(
-                {'error': 'Profile not found.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        match_history = MatchHistory.objects.filter(
-            models.Q(winner=profile) | models.Q(loser=profile)
-        )
-        if match_history.exists():
-            serializer = self.serializer_class(match_history, many=True)
-            return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
-        else:
-            return JsonResponse(
-                {'message': 'No match_history found for this profile.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
 class SettingUpdateView(generics.GenericAPIView):
     serializer_class = SettingSerializer
 
@@ -119,4 +94,30 @@ class ProfileIdDataView(generics.GenericAPIView):
 
         serializer = self.serializer_class(profile)
         return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+
+class PlayerMatchHistoryView(generics.ListAPIView):
+    serializer_class = MatchHistorySerializer
+    # serialiser_class = Profil
+
+    def get(self, request, username):
+        try:
+            profile = Profile.objects.get(username=username)
+
+        except Profile.DoesNotExist:
+            return JsonResponse(
+                {'error': 'Profile not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        match_history = MatchHistory.objects.filter(
+            models.Q(winner=profile) | models.Q(loser=profile)
+        )
+        if match_history.exists():
+            serializer = self.serializer_class(match_history, many=True)
+            return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse(
+                {'message': 'No match_history found for this profile.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
             

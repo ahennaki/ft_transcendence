@@ -4,6 +4,9 @@ from .models                import Tournament, TournamentParticipant, Tournament
 from channels.layers        import get_channel_layer
 from asgiref.sync           import async_to_sync
 from authentication.utils   import print_red, print_green, print_yellow
+from prfl.models            import Profile
+from prfl.serializers       import ProfileSerializer
+from django.db              import models
 
 def seed_players(tournament):
     participants = list(tournament.participants.all().order_by('joined_at'))
@@ -15,18 +18,16 @@ def create_initial_matches(tournament):
     pairings = [
         (participants[0], participants[1]),
         (participants[2], participants[3]),
-        (participants[4], participants[5]),
-        (participants[6], participants[7]),
+        # (participants[4], participants[5]),
+        # (participants[6], participants[7]),
     ]
-    # scheduled_time = timezone.now() + timedelta(hours=1)
 
     for pairing in pairings:
         match = TournamentMatch.objects.create(
             tournament=tournament,
-            round_number=1,
+            round_number=2, #change it to 1
             player1=pairing[0],
             player2=pairing[1],
-            # scheduled_time=scheduled_time,
             completed=False
         )
         notify_players_of_match(match)
@@ -61,25 +62,24 @@ def create_semifinals(tournament):
     quarterfinals = tournament.matches.filter(round_number=1, completed=True).order_by('id')
     winners = [match.winner for match in quarterfinals]
 
+    for winner in winners:
+        notify_winners_of_new_winner(winner, tournament)
+
     if len(winners) != 4:
         return False
 
-    # scheduled_time = timezone.now() + timedelta(hours=2)
-
-    match1 = Match.objects.create(
+    match1 = TournamentMatch.objects.create(
         tournament=tournament,
         round_number=2,
         player1=winners[0],
         player2=winners[1],
-        # scheduled_time=scheduled_time,
         completed=False
     )
-    match2 = Match.objects.create(
+    match2 = TournamentMatch.objects.create(
         tournament=tournament,
         round_number=2,
         player1=winners[2],
         player2=winners[3],
-        # scheduled_time=scheduled_time,
         completed=False
     )
 
@@ -92,17 +92,19 @@ def create_final(tournament):
     semifinals = tournament.matches.filter(round_number=2, completed=True).order_by('id')
     winners = [match.winner for match in semifinals]
 
+
+    for winner in winners:
+        print_green(f'winner: {winner}')
+        notify_winners_of_new_winner(winner, tournament)
+
     if len(winners) != 2:
         return False
 
-    # scheduled_time = timezone.now() + timedelta(hours=3)
-
-    match = Match.objects.create(
+    match = TournamentMatch.objects.create(
         tournament=tournament,
         round_number=3,
         player1=winners[0],
         player2=winners[1],
-        # scheduled_time=scheduled_time,
         completed=False
     )
 
@@ -121,8 +123,8 @@ def notify_players_of_match(match):
     channel_layer = get_channel_layer()
     match_data = MatchSerializer(match).data
 
-    print_yellow(f'Notifying player1: {match.player1.user.username}, player2: {match.player2.user.username}')
-    print_yellow(f'Match Data: {match_data}')
+    # print_yellow(f'Notifying player1: {match.player1.user.username}, player2: {match.player2.user.username}')
+    # print_yellow(f'Match Data: {match_data}')
 
     async_to_sync(channel_layer.group_send)(
         f"user_{match.player1.user.username}",
@@ -131,3 +133,21 @@ def notify_players_of_match(match):
     async_to_sync(channel_layer.group_send)(
         f"user_{match.player2.user.username}",
         {"type": "send_match_info", "match_data": match_data, 'player_number': 2})
+
+def notify_winners_of_new_winner(new_winner, tournament):
+    from .serializers           import TournamentParticipantSerializer
+    channel_layer = get_channel_layer()
+
+    winners = (
+        tournament.matches.filter(winner__isnull=False)
+        .values_list('winner', flat=True)
+        .distinct())
+
+    winner_participants = TournamentParticipant.objects.filter(id__in=winners)
+    serialized_participants = TournamentParticipantSerializer(winner_participants, many=True).data
+
+    for winner_participant in winner_participants:
+        async_to_sync(channel_layer.group_send)(
+            f"user_{winner_participant.user.username}",
+            {"type": "update_winner", "winners": serialized_participants}
+        )

@@ -24,14 +24,14 @@ class Tournament(models.Model):
 class TournamentParticipant(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name='participants')
     user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='tournaments_participated')
-    alias = models.CharField(max_length=255, unique=True)
+    alias = models.CharField(max_length=255)
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('tournament', 'user', 'alias')
 
     def __str__(self):
-        return f"{self.user.username} in {self.tournament.name}"
+        return f"{self.user.username}"
 
 class TournamentMatch(models.Model):
     ROUND_CHOICES = [
@@ -45,11 +45,9 @@ class TournamentMatch(models.Model):
     player1 = models.ForeignKey(TournamentParticipant, on_delete=models.CASCADE, related_name='matches_as_player1', null=True, blank=True)
     player2 = models.ForeignKey(TournamentParticipant, on_delete=models.CASCADE, related_name='matches_as_player2', null=True, blank=True)
     winner = models.ForeignKey(TournamentParticipant, on_delete=models.SET_NULL, null=True, blank=True, related_name='matches_won')
-    # scheduled_time = models.DateTimeField()
     completed = models.BooleanField(default=False)
     score_player1 = models.IntegerField(default=0)
     score_player2 = models.IntegerField(default=0)
-    # match_number = models.IntegerField(default=0)
     previous_match_player1 = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='next_match_player1')
     previous_match_player2 = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='next_match_player2')
 

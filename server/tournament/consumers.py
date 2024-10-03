@@ -1,4 +1,6 @@
 import json
+import time
+import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db                import database_sync_to_async
 from .models                    import Tournament, TournamentParticipant, TournamentMatch
@@ -11,7 +13,7 @@ from authentication.utils       import print_red, print_green, print_yellow
 from game.game_loop             import game_loop
 from game.game_end              import end_game
 from game.paddle                import update_paddle, move_paddle
-from game.helpers               import initialize_data
+from game.helpers               import initialize_data, score_update
 
 @database_sync_to_async
 def validate_serializer(serializer):
@@ -58,10 +60,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             print_yellow(f'active_connection: {active_connections[self.user.id]}')
             if active_connections[self.user.id] == 0:
                 del active_connections[self.user.id]
-
         if hasattr(self, 'group_name'):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
-
         tournament = await self.get_tounament()
         if tournament and tournament.status == 'upcoming':
             await self.remove_participant(tournament)
@@ -78,6 +78,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             action = data.get("action")
 
             if action == "create_tournament":
+                print_green(f'data: {data}')
                 await self.create_tournament(data)
             elif action == "join_tournament":
                 await self.join_tournament(data)
@@ -120,6 +121,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             is_valid = await validate_serializer(serializer)
             if is_valid:
                 tournament = await save_serializer(serializer)
+                self.tournament_id = tournament.id
                 group_name = f"tournament_{tournament.id}"
                 await self.channel_layer.group_add(group_name, self.channel_name)
                 participants = await get_participants(tournament)
@@ -150,6 +152,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             if is_valid:
                 participant = await save_serializer(serializer)
                 tournament = participant.tournament
+                self.tournament_id = tournament.id
                 group_name = f"tournament_{tournament.id}"
                 await self.channel_layer.group_add(group_name, self.channel_name)
                 participants = await get_participants(tournament)
@@ -170,6 +173,10 @@ class TournamentConsumer(AsyncWebsocketConsumer):
 
     async def send_json(self, content, **kwargs):
         await self.send(text_data=json.dumps(content), **kwargs)
+
+    async def update_winner(self, event):
+        winners = event.get("winners")
+        await self.send_json({"type": "update_winner", "winners": winners})
 
     async def send_match_info(self, event):
         match_data = event.get("match_data")
@@ -198,7 +205,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         try:
             match = TournamentMatch.objects.get(id=match_id)
             return match, match.player1.user.username, match.player2.user.username
-        except Match.DoesNotExist:
+        except TournamentMatch.DoesNotExist:
             return None, None, None
 
     @database_sync_to_async
@@ -211,9 +218,9 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_tounament(self):
         profile = Profile.objects.get(user=self.user)
-        return Tournament.objects.filter(participants__profile=profile, status='upcoming').first()
+        return Tournament.objects.filter(participants__user=profile, status='upcoming').first()
 
     @database_sync_to_async
     def remove_participant(self, tournament):
         profile = Profile.objects.get(user=self.user)
-        TournamentParticipant.objects.filter(tournament=tournament, profile=profile).delete()
+        TournamentParticipant.objects.filter(tournament=tournament, user=profile).delete()

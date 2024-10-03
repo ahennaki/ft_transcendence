@@ -1,20 +1,33 @@
 from channels.db                import database_sync_to_async
 from .models                    import MatchHistory, Match
 from prfl.models                import Profile
+from prfl.serializers           import ProfileSerializer
 from authentication.utils       import print_red, print_green, print_yellow
 from tournament.models          import TournamentMatch
 
 async def end_game(consumer, isDisconnect):
     wn, ln, winner, loser, ws, ls = determine_winner_loser(consumer, isDisconnect)
 
-    print_green('end of the game!')
+    print_green(f'end of the game! winner: {winner}')
     if consumer.isTournament:
         await save_tounament_match(consumer, winner, loser, ws, ls)
     else:
         await save_match_history(consumer, winner, loser, ws, ls)
 
-    data = {"type": "end_game", "winner": wn,
-        "loser": ln, "score": f'{ws}-{ls}'
+    winner_profile = await get_profile_data(consumer, winner)
+    loser_profile = await get_profile_data(consumer, loser)
+
+    match_round = 0
+    if consumer.isTournament:
+        match_round = await get_round(consumer)
+
+    data = {"type": "end_game", "match_id": consumer.match_id, "winner": wn,
+        "loser": ln, "score": f'{ws}-{ls}',
+        "winner_profile": winner_profile,
+        "loser_profile": loser_profile,
+        "player1_score": consumer.score1,
+        "player2_score": consumer.score2,
+        "match_round": match_round
     }
 
     await consumer.channel_layer.group_send(
@@ -25,6 +38,17 @@ async def end_game(consumer, isDisconnect):
         f"user_{consumer.player2_username}",
         {"type": "end_game", "data": data}
     )
+
+@database_sync_to_async
+def get_profile_data(consumer, player):
+    # print_yellow(f'player:    {player}')
+    serializer = ProfileSerializer(player)
+    return serializer.data
+
+@database_sync_to_async
+def get_round(consumer):
+    match = TournamentMatch.objects.get(id=consumer.match_id)
+    return match.round_number
 
 def determine_winner_loser(consumer, isDisconnect):
     if not isDisconnect:

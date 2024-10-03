@@ -63,6 +63,7 @@ async def notify_players(consumer, player1, player2, match):
 
 @database_sync_to_async
 def get_profile_data(consumer, player):
+    print_yellow(f'player:    {player}')
     serializer = ProfileSerializer(player)
     return serializer.data
 

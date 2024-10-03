@@ -26,7 +26,6 @@ class AliasAvailabilityCheckView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         serializer = AliasCheckSerializer(data=request.data)
-        print_yellow(f'data= {request.data}')
         
         if serializer.is_valid():
             alias_taken = serializer.validated_data['alias_taken']
@@ -41,6 +40,7 @@ class TournamentNameCheckView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         serializer = TournamentNameCheckSerializer(data=request.data)
+        print_yellow(f'data= {request.data}')
         if serializer.is_valid():
             name_taken = serializer.validated_data['name_taken']
             print_red(f'name_taken {name_taken}')
@@ -48,6 +48,7 @@ class TournamentNameCheckView(generics.GenericAPIView):
                 return JsonResponse({'success': 'valide name'}, status=status.HTTP_200_OK)
             else:
                 return JsonResponse({'error': 'invalide name'}, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'error': 'invalide name'}, status=status.HTTP_400_BAD_REQUEST)
 
 class CreateTournamentView(generics.CreateAPIView):
     serializer_class = TournamentCreateSerializer
@@ -86,7 +87,7 @@ class UpdateMatchView(generics.UpdateAPIView):
     queryset = TournamentMatch.objects.all()
     serializer_class = MatchUpdateSerializer
 
-    def update(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         match = self.get_object()
         serializer = self.get_serializer(match, data=request.data, partial=True)
         if serializer.is_valid():
