@@ -9,6 +9,7 @@ def gen_token(user):
         payload= {
             'exp': expr,
             'user_id': user.id,
+            'username': user.username,
             'email': user.email,
             'jti': str(uuid.uuid4()),
         },

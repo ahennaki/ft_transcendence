@@ -9,4 +9,5 @@ urlpatterns = [
     path('join/', JoinTournamentView.as_view(), name='join-tournament'),
     path('list/', ListTournamentsView.as_view(), name='list-tournaments'),
     path('matches/update/<int:pk>/', UpdateMatchView.as_view(), name='update-match'),
+    path('tournament-match-history/<str:username>/', TournamentMatchHistoryView.as_view(), name='tournament-match-history'),
 ]

@@ -1,7 +1,0 @@
-cd Manage_services
-make
-cd ../server
-source env/bin/activate
-set -a
-source ../Manage_services/.env
-daphne -b 0.0.0.0 -p 8800 config.asgi:application

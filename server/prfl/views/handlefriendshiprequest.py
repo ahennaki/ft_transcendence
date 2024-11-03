@@ -33,13 +33,17 @@ class HandleFriendshipRequestView(generics.GenericAPIView):
             friendshiprequest.delete()
         except FriendRequest.DoesNotExist:
             return JsonResponse(
-                {"message": "This friendship does not exist"},
+                {"message": "This friendship request does not exist"},
                 status = status.HTTP_404_NOT_FOUND
             )
-        print(f"######## {status_}")
         if status_ == 'accepted':
             Friend.objects.create(profile=profile, friend=user.profile)
-        Notification.objects.create(profile=profile, content=f"{user.username} has {status_} your FriendShip request", from_user=user.username)
+        Notification.objects.create(
+            profile=profile, 
+            content=f"{user.username} has {status_} your FriendShip request", 
+            notification_type='HANDLE_REQUESTED_FRIENDSHIP',
+            from_user=user.username
+        )
         channel_layer = get_channel_layer()
         async_to_sync(self.handle_request)(user.username, username, channel_layer, status_)
         

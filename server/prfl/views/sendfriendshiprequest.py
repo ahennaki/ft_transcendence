@@ -56,7 +56,12 @@ class SendFriendshipRequestView(generics.GenericAPIView):
         except BlockedFriend.DoesNotExist:
             pass
         FriendRequest.objects.create(from_user=user.profile, to_user=profile)
-        Notification.objects.create(profile=profile, content=f"You have a FriendShip request from {user.username}", from_user=user.username)
+        Notification.objects.create(
+            profile=profile, 
+            content=f"You have a FriendShip request from {user.username}", 
+            notification_type='FRIENDSHIP_REQUEST',
+            from_user=user.username
+        )
         channel_layer = get_channel_layer()
         async_to_sync(self.handle_request)(user.username, username, channel_layer)
         

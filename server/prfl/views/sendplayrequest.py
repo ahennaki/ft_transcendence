@@ -28,13 +28,25 @@ class SendPlayWithMeRequestView(generics.GenericAPIView):
                 {"message": "User does not exist"},
                 status = status.HTTP_404_NOT_FOUND
             )
-        user.profile.isInviting = True
-        user.profile.save()
-        Notification.objects.create(profile=profile, content=f"You have a PLAYWITHME request from {user.username}", from_user=user.username)
+    
+        if profile in user.profile.play_requests.all():
+            return JsonResponse(
+                {"message": f"You have already sent/receive a PlayWithMe request to/from {username}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.profile.play_requests.add(profile)
+
+        Notification.objects.create(
+            profile=profile,
+            content=f"You have a PLAYWITHME request from {user.username}", 
+            notification_type='PLAYWITHME_REQUEST',
+            from_user=user.username
+        )
         channel_layer = get_channel_layer()
         async_to_sync(self.handle_request)(user.username, username, channel_layer)
         return JsonResponse(
-            {"message": "Friend Request sent successfully"},
+            {"message": "PlayWithMe Request sent successfully"},
             status = status.HTTP_200_OK
         )
 

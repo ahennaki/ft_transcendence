@@ -3,23 +3,19 @@ from .models                    import MatchHistory, Match
 from prfl.models                import Profile
 from prfl.serializers           import ProfileSerializer
 from authentication.utils       import print_red, print_green, print_yellow
-from tournament.models          import TournamentMatch
+from tournament.models          import TournamentMatch, TournamentMatchHistory
 
 async def end_game(consumer, isDisconnect):
+    print_green(f'end of the game!')
     wn, ln, winner, loser, ws, ls = determine_winner_loser(consumer, isDisconnect)
+    print_green(f'winner: {winner}')
 
-    print_green(f'end of the game! winner: {winner}')
-    if consumer.isTournament:
-        await save_tounament_match(consumer, winner, loser, ws, ls)
-    else:
-        await save_match_history(consumer, winner, loser, ws, ls)
+    await save_match_history(consumer, winner, loser, ws, ls)
+    await set_badge(winner, 1)
+    await set_badge(loser, 0)
 
-    winner_profile = await get_profile_data(consumer, winner)
-    loser_profile = await get_profile_data(consumer, loser)
-
-    match_round = 0
-    if consumer.isTournament:
-        match_round = await get_round(consumer)
+    winner_profile = await get_profile_data(winner)
+    loser_profile = await get_profile_data(loser)
 
     data = {"type": "end_game", "match_id": consumer.match_id, "winner": wn,
         "loser": ln, "score": f'{ws}-{ls}',
@@ -27,7 +23,7 @@ async def end_game(consumer, isDisconnect):
         "loser_profile": loser_profile,
         "player1_score": consumer.score1,
         "player2_score": consumer.score2,
-        "match_round": match_round
+        "match_round": 0
     }
 
     await consumer.channel_layer.group_send(
@@ -40,15 +36,34 @@ async def end_game(consumer, isDisconnect):
     )
 
 @database_sync_to_async
-def get_profile_data(consumer, player):
-    # print_yellow(f'player:    {player}')
-    serializer = ProfileSerializer(player)
+def get_profile_data(player):
+    serializer = ProfileSerializer(player)  
     return serializer.data
 
 @database_sync_to_async
-def get_round(consumer):
-    match = TournamentMatch.objects.get(id=consumer.match_id)
-    return match.round_number
+def set_badge(player, isWinner):
+    profile = Profile.objects.get(username=player)
+    if isWinner:
+        profile.rank += 50
+        profile.wins += 1
+        # print_yellow(f'player data: {profile.rank}')
+    else:
+        profile.loses += 1
+    if 0 < profile.rank <= 200:
+        profile.badge = 'BRONZE'
+    elif 200 < profile.rank <= 400:
+        profile.badge = 'SILVER'
+    elif 400 < profile.rank <= 600:
+        profile.badge = 'GOLD'
+    elif 600 < profile.rank <= 800:
+        profile.badge = 'PLATINUM'
+    elif 800 < profile.rank <= 1000:
+        profile.badge = 'DIAMOND'
+    elif 1000 < profile.rank <= 1200:
+        profile.badge = 'HEROIC'
+    elif 1200 < profile.rank:
+        profile.badge = 'GRAND_MASTER'
+    profile.save()
 
 def determine_winner_loser(consumer, isDisconnect):
     if not isDisconnect:
@@ -81,7 +96,3 @@ def save_match_history(consumer, winner, loser, winner_score, loser_score):
         winner_score=winner_score,
         loser_score=loser_score
     )
-
-@database_sync_to_async
-def save_tounament_match(consumer, winner, loser, winner_score, loser_score):
-    pass

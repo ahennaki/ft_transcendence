@@ -27,13 +27,12 @@ class UserProfileView(generics.GenericAPIView):
             "rank": profile.rank,
             "badge": profile.badge,
             "background_picture": profile.background_picture,
-            "total": profile.total,
             "wins": profile.wins,
             "loses": profile.loses,
             "friends": friendslist(profile)
         }
     
         return JsonResponse(
-            {"profile": profile_data},
+            profile_data,
             status = status.HTTP_200_OK,
         )

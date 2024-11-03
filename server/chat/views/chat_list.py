@@ -24,17 +24,23 @@ class ChatsView(generics.GenericAPIView):
             last_message = chat.messages.order_by('-created_at').first()
             unread_messages = chat.messages.filter(receiver=user.profile, is_read=False).count()
             time_difference = None
+            last_message_time = None
             if last_message:
                 time_difference = timezone.now() - last_message.created_at
+                last_message_time = last_message.created_at
             chats_data.append({
                 "username": other.username,
+                "picture": other.picture,
+                "rank": other.rank,
                 "last_message_content": last_message.content if last_message else None,
                 "is_online": other.is_online,
                 "unread_messages": unread_messages,
+                "last_message_time": last_message_time,
                 "last_message_time_diff": str(time_difference) if time_difference else None,
             })
         return JsonResponse(
-            {"chats": chats_data},
+            chats_data,
+            safe = False,
             status = status.HTTP_200_OK,
         )
 # pic

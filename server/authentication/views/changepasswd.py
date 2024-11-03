@@ -5,7 +5,6 @@ from ..utils        import Authenticate, JWTsGenerator
 
 class ChangePasswd(generics.GenericAPIView):
     def post(self, request):
-        # add authentication
         old_password = request.data['old_password']
         new_password = request.data['new_password']
 
@@ -15,7 +14,7 @@ class ChangePasswd(generics.GenericAPIView):
                 {"message": "User is not authenticated"},
                 status = status.HTTP_401_UNAUTHORIZED
             )
-        if not old_password and not new_password:
+        if not old_password or not new_password:
             return JsonResponse(
                 {"message": "Old password and new password are required"},
                 status = status.HTTP_400_BAD_REQUEST

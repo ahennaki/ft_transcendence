@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     # The project included apps
     'corsheaders',
     'rest_framework',
+    'drf_yasg',
     'authentication.apps.AuthenticationConfig',
     'chat.apps.ChatConfig',
     'prfl.apps.PrflConfig',
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
     'django_otp.plugins.otp_totp',
     'two_factor',
     'qrcode',
+    'storages',
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
@@ -62,16 +64,10 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
-            "capacity": 1000000,
+            "hosts": [('redis', 6379)],
+            "capacity": 10000000,
         },
     },
-}
-
-ELASTICSEARCH_DSL = {
-    'default': {
-        'hosts': 'localhost:9200'
-    }
 }
 
 MIDDLEWARE = [
@@ -108,7 +104,10 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://*',
+    'http://10.13.100.66',
+    'http://10.13.6.4',
+    'http://10.13.5.7',
+    'http://localhost',
 ]
 
 TEMPLATES = [
@@ -152,7 +151,7 @@ DATABASES = {
         'NAME': os.environ.get('POSTGRES_DB'),
         'USER': os.environ.get('POSTGRES_USER'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': 'localhost',
+        'HOST': 'postgres',
         'PORT': '5432',
     }
 }
@@ -160,7 +159,7 @@ DATABASES = {
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
-        'LOCATION': 'localhost:11211',
+        'LOCATION': 'memcached:11211', 
         'TIMEOUT': int(timedelta(days=3).total_seconds()),
     }
 }
@@ -203,10 +202,26 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+# STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/3.2/howto/static-files/
+STATIC_URL = '/static/'
+STATICFILES_LOCATION = 'static'
+STATICFILES_STORAGE = "prfl.storage.StaticS3Boto3Storage"
+
+MEDIA_URL = '/media/'
+DEFAULT_FILE_STORAGE = "prfl.storage.S3MediaStorage"
+
+AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
+
+AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_URL")
+MINIO_ACCESS_URL = os.environ.get("MINIO_ACCESS_URL")
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -230,17 +245,3 @@ EMAIL_USE_TLS=True
 EMAIL_HOST_USER='teamfttranscendence@gmail.com'
 EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL='teamfttranscendence@gmail.com'
-
-# AWS S3 Configuration
-AWS_ACCESS_KEY_ID = 'AKIAYU2GNIVTML776A3P'
-AWS_SECRET_ACCESS_KEY = '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'
-AWS_STORAGE_BUCKET_NAME = 'ft-transcendence2'
-AWS_S3_SIGNATURE_VERSION = 's3v4'
-
-AWS_S3_FILE_OVERWRITE = True
-AWS_DEFAULT_ACL = None  # Disable default ACL to avoid any permission issues
-AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400',
-}
-
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'

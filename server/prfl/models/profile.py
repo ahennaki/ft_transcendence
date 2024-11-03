@@ -2,7 +2,7 @@ from django.db                  import models
 from authentication.models      import CustomUser
 from django.core.exceptions     import ValidationError
 from django.utils.translation   import gettext_lazy as _
-# from storages.backends.s3boto3  import S3Boto3Storage
+# from .storage                   import StaticS3Boto3Storage
 
 def validate_image(file):
     file_size = file.size
@@ -33,12 +33,11 @@ class Profile(models.Model):
     city = models.CharField(max_length=100, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
     zip_code = models.CharField(max_length=20, blank=True, null=True)
-    picture = models.CharField(_("pic"), max_length=150, blank=True, null=True)
-    background_picture = models.CharField(_("back pic"), max_length=150, blank=True, null=True)
-    # picture = models.ImageField(upload_to='profile_pictures/', storage=S3Boto3Storage(), validators=[validate_image], blank=True, null=True)
-    # background_picture = models.ImageField(upload_to='background_pictures/', storage=S3Boto3Storage(), validators=[validate_image], blank=True, null=True)
+    # picture = models.CharField(_("pic"), max_length=150, blank=True, null=True)
+    # background_picture = models.CharField(_("back pic"), max_length=150, blank=True, null=True)
+    picture = models.ImageField(upload_to='profile_pictures/', validators=[validate_image], blank=True, null=True)
+    background_picture = models.ImageField(upload_to='background_pictures/', validators=[validate_image], blank=True, null=True)
     rank = models.IntegerField(_("Rank"), default=0)
-    total = models.IntegerField(_("total"), default=0)
     wins = models.IntegerField(_("wins"), default=0)
     loses = models.IntegerField(_("loses"), default=0)
     isSettings = models.BooleanField(_("isSettings"), default=False)
@@ -51,6 +50,8 @@ class Profile(models.Model):
         choices=BADGE_CHOICES,
         default='BRONZE',
     )
+    
+    play_requests = models.ManyToManyField('self', symmetrical=False, related_name='received_play_requests', blank=True)
 
     def __str__(self):
-        return self.username
+        return self.username;

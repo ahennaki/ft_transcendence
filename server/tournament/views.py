@@ -1,6 +1,6 @@
 from rest_framework 			import generics, status
 from django.http                import JsonResponse
-from .models 					import Tournament, TournamentParticipant, TournamentMatch
+from .models 					import Tournament, TournamentParticipant, TournamentMatch, TournamentMatchHistory
 from .helpers					import progress_tournament
 from authentication.utils       import print_red, print_green, print_yellow
 from .serializers 				import (
@@ -10,7 +10,8 @@ from .serializers 				import (
     TournamentCreateSerializer,
     TournamentJoinSerializer,
     MatchUpdateSerializer,
-    TournamentNameCheckSerializer
+    TournamentNameCheckSerializer,
+    TournamentMatchHistorySerializer,
 )
 
 class TournamentNameListView(generics.GenericAPIView):
@@ -88,6 +89,7 @@ class UpdateMatchView(generics.UpdateAPIView):
     serializer_class = MatchUpdateSerializer
 
     def post(self, request, *args, **kwargs):
+        print_yellow(f'data request: {request.data}')
         match = self.get_object()
         serializer = self.get_serializer(match, data=request.data, partial=True)
         if serializer.is_valid():
@@ -95,3 +97,28 @@ class UpdateMatchView(generics.UpdateAPIView):
             progress_tournament(match.tournament)
             return JsonResponse(serializer.data, status=status.HTTP_200_OK)
         return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class TournamentMatchHistoryView(generics.ListAPIView):
+    serializer_class = TournamentMatchHistorySerializer
+
+    def get(self, request, username):
+        try:
+            profile = Profile.objects.get(username=username)
+
+        except Profile.DoesNotExist:
+            return JsonResponse(
+                {'error': 'Profile not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        match_history = TournamentMatchHistory.objects.filter(
+            models.Q(winner=profile) | models.Q(loser=profile)
+        )
+        if match_history.exists():
+            serializer = self.serializer_class(match_history, many=True)
+            return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse(
+                {'message': 'No match_history found for this profile.'},
+                status=status.HTTP_404_NOT_FOUND
+            )

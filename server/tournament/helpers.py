@@ -7,6 +7,8 @@ from authentication.utils   import print_red, print_green, print_yellow
 from prfl.models            import Profile
 from prfl.serializers       import ProfileSerializer
 from django.db              import models
+import time
+import asyncio
 
 def seed_players(tournament):
     participants = list(tournament.participants.all().order_by('joined_at'))
@@ -63,7 +65,7 @@ def create_semifinals(tournament):
     winners = [match.winner for match in quarterfinals]
 
     for winner in winners:
-        notify_winners_of_new_winner(winner, tournament)
+        notify_winners_of_new_winner(winner, tournament, "semifinal")
 
     if len(winners) != 4:
         return False
@@ -83,6 +85,8 @@ def create_semifinals(tournament):
         completed=False
     )
 
+    # asyncio.sleep(5)
+
     notify_players_of_match(match1)
     notify_players_of_match(match2)
 
@@ -94,8 +98,7 @@ def create_final(tournament):
 
 
     for winner in winners:
-        print_green(f'winner: {winner}')
-        notify_winners_of_new_winner(winner, tournament)
+        notify_winners_of_new_winner(winner, tournament, "final")
 
     if len(winners) != 2:
         return False
@@ -108,6 +111,8 @@ def create_final(tournament):
         completed=False
     )
 
+    # asyncio.sleep(5)
+
     notify_players_of_match(match)
 
     return True
@@ -117,11 +122,12 @@ def declare_champion(tournament):
     if final and final.winner:
         tournament.status = 'completed'
         tournament.save()
+        notify_winners_of_new_winner(final.winner, tournament, "completed")
 
 def notify_players_of_match(match):
-    from .serializers import MatchSerializer
+    from .serializers import TournamentMatchSerializer
     channel_layer = get_channel_layer()
-    match_data = MatchSerializer(match).data
+    match_data = TournamentMatchSerializer(match).data
 
     # print_yellow(f'Notifying player1: {match.player1.user.username}, player2: {match.player2.user.username}')
     # print_yellow(f'Match Data: {match_data}')
@@ -134,7 +140,7 @@ def notify_players_of_match(match):
         f"user_{match.player2.user.username}",
         {"type": "send_match_info", "match_data": match_data, 'player_number': 2})
 
-def notify_winners_of_new_winner(new_winner, tournament):
+def notify_winners_of_new_winner(new_winner, tournament, round_tour):
     from .serializers           import TournamentParticipantSerializer
     channel_layer = get_channel_layer()
 
@@ -149,5 +155,5 @@ def notify_winners_of_new_winner(new_winner, tournament):
     for winner_participant in winner_participants:
         async_to_sync(channel_layer.group_send)(
             f"user_{winner_participant.user.username}",
-            {"type": "update_winner", "winners": serialized_participants}
+            {"type": "update_winner", "winners": serialized_participants, "round": round_tour}
         )

@@ -27,7 +27,7 @@ class GoogleOAuthView(generics.GenericAPIView):
             print_green(f'data===== {userData}')
         except Exception as e:
             print_yellow(f'Error: {str(e)}')
-            return redirect(f'http://10.13.5.7/oauth?param=0')
+            return redirect(f'http://localhost:8080/oauth?param=0')
         id = AuthenticateUserGG(request, userData)
         expr = datetime.now(timezone.utc) + timedelta(minutes=5)
         token = jwt.encode(
@@ -39,4 +39,4 @@ class GoogleOAuthView(generics.GenericAPIView):
             key= settings.SIMPLE_JWT['SIGNING_KEY'],
             algorithm='HS256'
         )
-        return redirect(f'http://localhost/oauth?param={str(token)}')
+        return redirect(f'http://localhost:8080/oauth?param={str(token)}')

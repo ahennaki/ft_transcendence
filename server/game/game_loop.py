@@ -3,10 +3,13 @@ import time
 from channels.db                import database_sync_to_async
 from authentication.utils       import print_red, print_green, print_yellow
 from .game_end                  import end_game
+from .helpers                   import reinitialize_data
 
 async def game_loop(consumer):
+    await reinitialize_data(consumer)
     while consumer.isGaming:
         update_ball_position(consumer)
+        # print_yellow(f'ball: {consumer.ball}')
 
         data = {"type": "game_update", "ball": consumer.ball}
 
@@ -91,6 +94,9 @@ async def send_score_update(consumer):
         "player1_score": consumer.score1,
         "player2_score": consumer.score2
     }
+
+    # print_yellow(f'send score1: {consumer.score1}')
+    # print_yellow(f'send score2: {consumer.score2}')
 
     if consumer.isGaming:
         await consumer.channel_layer.group_send(

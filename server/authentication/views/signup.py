@@ -12,7 +12,6 @@ class SignUpView(generics.CreateAPIView):
     serializer_class = CustomUserSerializer
     
     def post(self, request, *args, **kwargs):
-        print_green('Sign up End Point')
         serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
@@ -23,4 +22,3 @@ class SignUpView(generics.CreateAPIView):
             {"message": "User Created Successfully"},
             status=status.HTTP_201_CREATED
         )
-        

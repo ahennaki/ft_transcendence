@@ -1,20 +1,20 @@
 from rest_framework     import serializers
-from .models            import Tournament, TournamentParticipant, TournamentMatch
+from .models            import Tournament, TournamentParticipant, TournamentMatch, TournamentMatchHistory
 from django.db          import transaction
 from prfl.serializers   import ProfileSerializer
 from prfl.models        import Profile
 from .helpers           import create_initial_matches
 
 class TournamentParticipantSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer(source='user', read_only=True)
+    profile = ProfileSerializer(source='user')
 
     class Meta:
         model = TournamentParticipant
         fields = ['id', 'profile', 'alias', 'joined_at']
 
 class TournamentSerializer(serializers.ModelSerializer):
-    created_by = serializers.CharField(source='created_by.user.username', read_only=True)
-    participants = TournamentParticipantSerializer(many=True, read_only=True)
+    created_by = serializers.CharField(source='created_by.user.username')
+    participants = TournamentParticipantSerializer(many=True)
 
     class Meta:
         model = Tournament
@@ -159,10 +159,19 @@ class MatchUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Winner must be specified if the match is completed.")
         return attrs
 
-class MatchSerializer(serializers.ModelSerializer):
-    player1 = TournamentParticipantSerializer(read_only=True)
-    player2 = TournamentParticipantSerializer(read_only=True)
+class TournamentMatchSerializer(serializers.ModelSerializer):
+    player1 = TournamentParticipantSerializer()
+    player2 = TournamentParticipantSerializer()
 
     class Meta:
         model = TournamentMatch
         fields = ['id', 'round_number', 'player1', 'player2', 'completed']
+
+class TournamentMatchHistorySerializer(serializers.ModelSerializer):
+    winner = TournamentParticipantSerializer()
+    loser = TournamentParticipantSerializer()
+    match = TournamentMatchSerializer()
+
+    class Meta:
+        model = TournamentMatchHistory
+        fields = ['match', 'winner', 'loser', 'winner_score', 'loser_score', 'ended_at']

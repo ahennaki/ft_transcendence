@@ -5,5 +5,5 @@ class StatisticsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = (
-            'total', 'wins', 'loses',
+            'wins', 'loses',
         )

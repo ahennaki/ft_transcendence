@@ -24,16 +24,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         print_green('websocket .... connections accpted')
         async with connections_lock:
             user_connections[self.user.username] = self.channel_name
-        profile = await sync_to_async(self.get_profile)(self.user)
-        await sync_to_async(self.update_profile)(profile, True)
 
     async def disconnect(self, code):
         async with connections_lock:
             if self.user.username in user_connections:
                 del user_connections[self.user.username]
         print_red('websocket ... connection closed')
-        profile = await sync_to_async(self.get_profile)(self.user)
-        await sync_to_async(self.update_profile)(profile, False)
 
     async def receive(self, text_data):
         print_green('websocket ... receiving')
@@ -61,18 +57,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         room_name = f"{user_id}-{target_id}" if user_id >= target_id else f"{target_id}-{user_id}"
 
         print_yellow(room_name)
-        if action == 'chat_message':
+        if action == 'create_room':
+            await self.create_room(data_json, profile, user, room_name)
+        elif action == 'chat_message':
             await self.send_message(data_json, username, target_username, profile, user, room_name)
         elif action == 'read_receipt':
             await self.set_read(data_json, username, target_username, room_name)
 
-    async def send_message(self, data_json, username, target_username, profile, user, room_name):
-        message_content = data_json.get('message')
-        if not message_content:
-            await self.error({
-                'type': 'error',
-                'error': 'no message is provided.'
-            })
+    async def create_room(self, data_json, profile, user, room_name):
         try:
             chat = await sync_to_async(Chat.objects.get)(name=room_name)
         except Chat.DoesNotExist:
@@ -81,7 +73,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 user2=user,
                 name=room_name
             )
+
+    async def send_message(self, data_json, username, target_username, profile, user, room_name):
+        message_content = data_json.get('message')
+        if not message_content:
+            await self.error({
+                'type': 'error',
+                'error': 'no message is provided.'
+            })
         print_yellow(message_content)
+        try:
+            chat = await sync_to_async(Chat.objects.get)(name=room_name)
+        except Chat.DoesNotExist:
+            await self.error({
+                'type': 'error',
+                'error': 'No chat found.'
+            })
         message = await sync_to_async(Message.objects.create)(
             chat=chat,
             sender=profile,
@@ -166,9 +173,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return message.created_at.isoformat()
     def get_id(self, profile):
         return profile.id
-    def update_profile(self, profile, flg):
-        profile.is_online = flg
-        profile.save()
     def update(self, messages):
         for message in messages:
             if not message.is_read:

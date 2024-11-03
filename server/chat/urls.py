@@ -5,5 +5,5 @@ from .views import *
 urlpatterns = [
     path('user/', DataView.as_view()),
     path('messages/history/', LoadMessagesView.as_view()),
-    # path('chats/', ChatsView.as_view()),
+    path('chats/', ChatsView.as_view()),
 ]

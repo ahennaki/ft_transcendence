@@ -1,8 +1,8 @@
 FROM nginx:1.27.0-alpine
 
-COPY crtf/aennaki_me.crt /etc/ssl/aennaki_me/
-COPY crtf/aennaki_me.key /etc/ssl/aennaki_me/
-COPY crtf/aennaki_me.ca-bundle /etc/ssl/aennaki_me/
+COPY crtf/certificate.crt /etc/ssl/fttran_tech/
+COPY crtf/private.key /etc/ssl/fttran_tech/
+COPY crtf/ca_bundle.crt /etc/ssl/fttran_tech/
 
 COPY nginx.conf /etc/nginx/conf.d/
 

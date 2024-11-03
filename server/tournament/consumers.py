@@ -10,10 +10,10 @@ from prfl.models                import Profile
 from game.consumers             import active_connections
 from rest_framework             import serializers
 from authentication.utils       import print_red, print_green, print_yellow
-from game.game_loop             import game_loop
-from game.game_end              import end_game
+from game.game_loop             import game_loop, send_score_update
+from .match_end                 import end_match
 from game.paddle                import update_paddle, move_paddle
-from game.helpers               import initialize_data, score_update
+from game.helpers               import initialize_data, score_update, reinitialize_data
 
 @database_sync_to_async
 def validate_serializer(serializer):
@@ -52,48 +52,77 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         self.group_name = f"user_{self.user.username}"
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await initialize_data(self)
+        self.isTournament = True
 
     async def disconnect(self, close_code):
         print_red(f'{self.user.username} is disconnected')
         if self.user.id in active_connections:
             active_connections[self.user.id] -= 1
-            print_yellow(f'active_connection: {active_connections[self.user.id]}')
+            # print_yellow(f'active_connection: {active_connections[self.user.id]}')
             if active_connections[self.user.id] == 0:
                 del active_connections[self.user.id]
         if hasattr(self, 'group_name'):
+            if not (await self.handle_disconnect()):
+                await end_match(self, True)
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
-        tournament = await self.get_tounament()
-        if tournament and tournament.status == 'upcoming':
-            await self.remove_participant(tournament)
-            participants = await get_participants(tournament)
-            participant_serializer = TournamentParticipantSerializer(participants, many=True)
-            await self.channel_layer.group_send(f"tournament_{tournament.id}",
-                {"type": "participants_update", "participants": participant_serializer.data})
-        self.isGaming = False
-        self.isTournament = False
+            tournament = await self.get_tounament()
+            await self.disconnect_participant(tournament)
+            if tournament and tournament.status == 'upcoming':
+                await self.remove_participant(tournament)
+                participants = await get_participants(tournament)
+                participant_serializer = TournamentParticipantSerializer(participants, many=True)
+                await self.channel_layer.group_send(f"tournament_{tournament.id}",
+                    {"type": "participants_update", "participants": participant_serializer.data})
+            elif tournament and tournament.status == 'ongoing':
+                pass #todo
+            self.isGaming = False
+            self.isTournament = False
+
+    @database_sync_to_async
+    def handle_disconnect(self):
+        match = TournamentMatch.objects.get(id=self.match_id)
+        if self.isGaming:
+            return 0
+        elif not self.isGaming and self.match_id:
+            print_red(f'{self.user.username} is disconnected and send end_match')
+            match.number_player -= 1
+            match.save()
+            if match.number_player == 1:
+                return 0
+            else:
+                match.interupted = True #todo
+                match.save()
+        return 1
 
     async def receive(self, text_data):
-        try:
-            data = json.loads(text_data)
-            action = data.get("action")
+        data = json.loads(text_data)
+        action = data.get("action")
 
-            if action == "create_tournament":
-                print_green(f'data: {data}')
-                await self.create_tournament(data)
-            elif action == "join_tournament":
-                await self.join_tournament(data)
-            elif action == "start_game":
-                await self.start_game(data)
-            elif action == 'move_paddle':
-                await move_paddle(self, data)
-            elif action == 'update_paddle':
-                await update_paddle(self, data)
-            elif action == 'score_update':
-                await score_update(self, data)
-            else:
-                await self.send_json({"error": "Invalid action."})
-        except json.JSONDecodeError:
-            await self.send_json({"error": "Invalid JSON."})
+        if action == "create_tournament":
+            print_green(f'data: {data}')
+            await self.create_tournament(data)
+        elif action == "join_tournament":
+            await self.join_tournament(data)
+        elif action == "start_game":
+            await self.start_game(data)
+        elif action == "match_received":
+            print_yellow(f'data: {data}')
+            self.match_id = data['match_id']
+            self.match, self.player1_username, self.player2_username = await self.get_player_usernames()
+        elif action == 'move_paddle':
+            await move_paddle(self, data)
+        elif action == 'update_paddle':
+            await update_paddle(self, data)
+        elif action == 'score_update':
+            await score_update(self, data)
+        elif action == 'stop_game':
+            if self.isGaming:
+                self.isGaming = False
+        elif action == 'disconnect':
+            initialize_data(self)
+            await self.close()
+        else:
+            await self.send_json({"error": "Invalid action."})
 
     async def start_game(self, data):
         print_green(f'{self.user.username} start the game!')
@@ -101,7 +130,11 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         self.isGaming = True
         self.isTournament = True
         self.match_id = data['match_id']
-        self.match, self.player1_username, self.player2_username = await self.get_player_usernames(self.match_id)
+        self.match, self.player1_username, self.player2_username = await self.get_player_usernames()
+        await reinitialize_data(self)
+        await send_score_update(self)
+        if not (await self.check_connection()):
+            await end_match(self, True)
         if self.user.username == self.player1_username:
             asyncio.create_task(game_loop(self))
 
@@ -176,7 +209,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
 
     async def update_winner(self, event):
         winners = event.get("winners")
-        await self.send_json({"type": "update_winner", "winners": winners})
+        round_tour = event.get("round")
+        await self.send_json({"type": "update_winner", "winners": winners, "round": round_tour})
 
     async def send_match_info(self, event):
         match_data = event.get("match_data")
@@ -201,12 +235,31 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(event["data"]))
 
     @database_sync_to_async
-    def get_player_usernames(self, match_id):
+    def get_player_usernames(self):
         try:
-            match = TournamentMatch.objects.get(id=match_id)
+            match = TournamentMatch.objects.get(id=self.match_id)
             return match, match.player1.user.username, match.player2.user.username
         except TournamentMatch.DoesNotExist:
             return None, None, None
+
+    @database_sync_to_async
+    def check_connection(self):
+        match = TournamentMatch.objects.get(id=self.match_id)
+        if match.player1.isDisconnect:
+            self.score2 = 10
+            return 0
+        elif match.player2.isDisconnect:
+            self.score1 = 10
+            return 0
+        return 1
+
+    @database_sync_to_async
+    def get_match(self, match_id):
+        try:
+            match = TournamentMatch.objects.get(id=match_id)
+            return match
+        except TournamentMatch.DoesNotExist:
+            return None
 
     @database_sync_to_async
     def check_user_profile(self):
@@ -224,3 +277,12 @@ class TournamentConsumer(AsyncWebsocketConsumer):
     def remove_participant(self, tournament):
         profile = Profile.objects.get(user=self.user)
         TournamentParticipant.objects.filter(tournament=tournament, user=profile).delete()
+
+    @database_sync_to_async
+    def disconnect_participant(self, tournament):
+        try:
+            participant = TournamentParticipant.objects.get(tournament=tournament, user=self.user.profile)
+            participant.isDisconnect = True
+            participant.save()
+        except TournamentParticipant.DoesNotExist:
+            print(f"Participant not found for user {self.user.username} in tournament {tournament}")

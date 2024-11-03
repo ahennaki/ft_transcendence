@@ -1,5 +1,6 @@
-from django.db      import models
-from prfl.models    import Profile
+from django.db          import models
+from prfl.models        import Profile
+from tournament.models  import TournamentMatch
 
 class Match(models.Model):
     player1 = models.ForeignKey(Profile, related_name='player1', on_delete=models.CASCADE)
@@ -13,7 +14,7 @@ class Match(models.Model):
         return f'{self.player1} vs {self.player2}'
 
 class MatchHistory(models.Model):
-    match = models.OneToOneField(Match, on_delete=models.CASCADE, related_name='matchHistory')
+    match = models.OneToOneField(Match, null=True, blank=True, on_delete=models.SET_NULL, related_name='matchHistory')
     winner = models.ForeignKey(Profile, related_name='winner', on_delete=models.CASCADE)
     loser = models.ForeignKey(Profile, related_name='loser', on_delete=models.CASCADE)
     winner_score = models.IntegerField()
@@ -25,6 +26,11 @@ class MatchHistory(models.Model):
 
 class PlayerQueue(models.Model):
     player = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+class InviteQueue(models.Model):
+    player = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    invite_id = models.IntegerField()
     joined_at = models.DateTimeField(auto_now_add=True)
 
 class Setting(models.Model):

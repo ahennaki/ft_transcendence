@@ -8,6 +8,8 @@ import hashlib
 
 User = get_user_model()
 
+#  complete checking when adding friends and 2fa
+
 class DeleteAccountAffected(generics.GenericAPIView):
     def get(self, request, token):
         user = Authenticate(request)
@@ -21,6 +23,11 @@ class DeleteAccountAffected(generics.GenericAPIView):
             return JsonResponse(
                 {"message": "Invalid token"},
                 status = status.HTTP_400_BAD_REQUEST
+            )
+        if tk['username'] != user.username:
+            return JsonResponse(
+                {"message": "Authentication failed. Please log in with the account you wish to delete."},
+                status = status.HTTP_403_FORBIDDEN
             )
         user.delete()
         return invalidatetoken(request, 'User account and related data deleted successfully.')

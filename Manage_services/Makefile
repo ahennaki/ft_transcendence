@@ -11,7 +11,7 @@ PURPLE		= 	\e[1;35m
 
 up:
 	@printf "$(PURPLE) 	- Build and start the services $(NORMAL)\n"
-	@ docker-compose -f $(COMPOSE_FILE) up -d
+	@ docker-compose -f $(COMPOSE_FILE) up
 
 list:
 	@printf "$(PURPLE) 	- List all services $(NORMAL)\n"

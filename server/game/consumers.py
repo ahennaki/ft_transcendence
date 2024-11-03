@@ -1,6 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db                import database_sync_to_async
-from .models                    import PlayerQueue, Match
+from .models                    import PlayerQueue, Match, InviteQueue
 from prfl.models                import Profile
 from prfl.serializers           import ProfileSerializer
 from authentication.utils       import print_red, print_green, print_yellow
@@ -9,12 +9,12 @@ from .paddle                    import update_paddle, move_paddle
 from .helpers                   import initialize_data, score_update
 from .game_end                  import end_game
 from .matchmaking               import matchmaking
+from .matchinviting             import invited_player
 import json
 import time
 import asyncio
 
 active_connections = {}
-# invite_players = {}
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -52,6 +52,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 await end_game(self, True)
             self.isGaming = False
             await self.remove_player_from_queue()
+            await self.remove_inviter_from_queue()
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
 
@@ -63,9 +64,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.add_player_to_queue()
             await matchmaking(self)
         # elif action == 'invitation':
-            # if self.user.id not in invite_players:
-            #     invite_players[self.user.id] = 0
-            # await invited_player(self, data)
+        #     await self.invited_player()
         elif action == 'disconnect':
             self.isGaming = False
             await self.close()
@@ -151,3 +150,8 @@ class GameConsumer(AsyncWebsocketConsumer):
     def remove_player_from_queue(self):
         profile = self.user.profile
         PlayerQueue.objects.filter(player=profile).delete()
+
+    @database_sync_to_async
+    def remove_inviter_from_queue(self):
+        profile = self.user.profile
+        InviteQueue.objects.filter(player=profile).delete()

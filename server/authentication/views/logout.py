@@ -1,12 +1,10 @@
 from rest_framework import generics, status
 from django.http import JsonResponse
 from django.core.cache import cache
-from ..serializers import CustomUserSerializer
 from ..utils import Authenticate, invalidatetoken, print_green, print_red
 import hashlib
 
 class LogoutView(generics.GenericAPIView):
-    serializer_class = CustomUserSerializer
     def post(self, request, *args, **kwargs):
         print_green(f"User logging out {request.META['USER_ID']}")
         user = Authenticate(request)

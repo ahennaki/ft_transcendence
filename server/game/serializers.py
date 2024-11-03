@@ -9,15 +9,13 @@ class MatchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Match
-        fields = '__all__'
-        extra_kwargs = {
-            'player1': {'read_only': True},
-            'player2': {'read_only': True},
-            'start_time': {'read_only': True},
-            'status': {'read_only': True},
-        }
+        fields = ['player1', 'player2', 'start_time', 'status']
 
 class MatchHistorySerializer(serializers.ModelSerializer):
+    winner = ProfileSerializer()
+    loser = ProfileSerializer()
+    match = MatchSerializer()
+
     class Meta:
         model = MatchHistory
         fields = ['match', 'winner', 'loser', 'winner_score', 'loser_score', 'ended_at']

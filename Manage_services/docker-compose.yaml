@@ -1,17 +1,17 @@
 version: "3.9"
 
 services:
-  nginx:
-    container_name: nginx
-    build:
-      context: ./nginx_service
-      dockerfile: Dockerfile
-    ports:
-      - "443:443"
-      - "80:80"
-    networks:
-      - transcendence
-    restart: always
+  # nginx:
+  #   container_name: nginx
+  #   build:
+  #     context: ./nginx_service
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "443:443"
+  #     - "80:80"
+  #   networks:
+  #     - transcendence
+  #   restart: always
 
   postgres:
     image: postgres:16.3
@@ -48,6 +48,44 @@ services:
     volumes:
       - redisv:/data
     restart: always
+    networks:
+    - transcendence
+
+  server:
+    container_name: server
+    build:
+      context: ../server/
+      dockerfile: ../server/Dockerfile
+    env_file:
+      - .env
+    ports:
+    - "8800:8800"
+    restart: always
+    networks:
+    - transcendence
+
+  minio:
+    image: minio/minio:latest
+    ports:
+    - 9000:9000
+    - 9001:9001
+    environment:
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: minio123
+    command: server /data --console-address ":9001"
+
+  minio-client:
+    image: minio/mc:latest
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host rm expo;
+      /usr/bin/mc config host add --quiet --api s3v4 local http://minio:9000 minio minio123;
+      /usr/bin/mc rb --force local/bucket/;
+      /usr/bin/mc mb --quiet local/bucket/;
+      /usr/bin/mc policy set public local/bucket;
+      "
+    depends_on:
+      - minio
 
 volumes:
   pgdatabase:
